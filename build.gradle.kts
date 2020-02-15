@@ -5,7 +5,9 @@ plugins {
 
 allprojects {
     group = "pw.dotdash"
-    version = "0.7.0"
+    version = "0.8.0"
+
+    apply(plugin = "maven")
 }
 
 repositories {
@@ -19,6 +21,7 @@ dependencies {
 configure<JavaPluginConvention> {
     sourceCompatibility = JavaVersion.VERSION_1_8
 }
+
 tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"
