@@ -1,4 +1,4 @@
-# director
+# director [![Release](https://jitpack.io/v/TheFrontier/director.svg)](https://jitpack.io/#TheFrontier/director)
 
 A general-purpose, type-safe, tree-based command library.
 
