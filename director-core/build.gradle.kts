@@ -8,7 +8,7 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    api(kotlin("stdlib-jdk8"))
 }
 
 configure<JavaPluginConvention> {

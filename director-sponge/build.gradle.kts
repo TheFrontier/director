@@ -9,9 +9,9 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    api(kotlin("stdlib-jdk8"))
 
-    implementation(project(":director-core"))
+    api(project(":director-core"))
 
     compileOnly("org.spongepowered:spongeapi:7.1.0")
 }
