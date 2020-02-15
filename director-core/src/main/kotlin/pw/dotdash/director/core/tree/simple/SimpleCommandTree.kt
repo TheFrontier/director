@@ -171,14 +171,8 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B =
             this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(aliases).apply(init).build())
 
-        override fun addChild(aliases: List<String>, init: Consumer<ChildCommandTree.Builder<S, V, R>>): B =
-            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(aliases).apply { init.accept(this) }.build())
-
         override fun addChild(vararg aliases: String, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B =
             this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(*aliases).apply(init).build())
-
-        override fun addChild(vararg aliases: String, init: Consumer<ChildCommandTree.Builder<S, V, R>>): B =
-            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(*aliases).apply { init.accept(this) }.build())
 
         override fun setArgument(argument: ArgumentCommandTree<S, V, *, R>): B {
             require(argument is SimpleArgumentCommandTree) { "Argument trees must be made with ArgumentCommandTree.builder()" }
@@ -189,9 +183,6 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
 
         override fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): B =
             this.setArgument(ArgumentCommandTree.builder<S, V, NV, R>().setParameter(parameter).apply(init).build())
-
-        override fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: Consumer<ArgumentCommandTree.Builder<S, V, NV, R>>): B =
-            this.setArgument(ArgumentCommandTree.builder<S, V, NV, R>().setParameter(parameter).apply { init.accept(this) }.build())
 
         override fun setExecutor(executor: (S, V) -> R): B {
             this.executor = executor
