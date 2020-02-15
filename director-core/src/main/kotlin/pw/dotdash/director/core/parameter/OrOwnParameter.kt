@@ -1,5 +1,6 @@
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
@@ -12,10 +13,10 @@ import pw.dotdash.director.core.value.ValueParameter
  * @param compute The lambda to call if the parameter fails
  * @return The new value parameter
  */
-fun <S, P, V : Any> ValueParameter<S, P, V>.orOwn(compute: (S) -> V?): ValueParameter<S, P, V> =
+fun <S, P : HList<P>, V : Any> ValueParameter<S, P, V>.orOwn(compute: (S) -> V?): ValueParameter<S, P, V> =
     OrOwnParameter(this, compute)
 
-private class OrOwnParameter<S, P, V>(val parameter: ValueParameter<S, P, V>, val compute: (S) -> V?) : ValueParameter<S, P, V> {
+private class OrOwnParameter<S, P : HList<P>, V>(val parameter: ValueParameter<S, P, V>, val compute: (S) -> V?) : ValueParameter<S, P, V> {
     override fun parse(source: S, tokens: CommandTokens, previous: P): V {
         val snapshot: CommandTokens.Snapshot = tokens.snapshot
         return try {

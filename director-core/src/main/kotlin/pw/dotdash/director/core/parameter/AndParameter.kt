@@ -4,15 +4,16 @@
 package pw.dotdash.director.core.parameter
 
 import pw.dotdash.director.core.HCons
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.HNil
 import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 
-infix fun <S, P, A, B> ValueParameter<S, P, A>.and(other: ValueParameter<S, P, B>): ValueParameter<S, P, HCons<A, HCons<B, HNil>>> =
+infix fun <S, P : HList<P>, A, B> ValueParameter<S, P, A>.and(other: ValueParameter<S, P, B>): ValueParameter<S, P, HCons<A, HCons<B, HNil>>> =
     AndParameter(this, other)
 
-private data class AndParameter<S, P, A, B>(
+private data class AndParameter<S, P : HList<P>, A, B>(
     val first: ValueParameter<S, P, A>,
     val second: ValueParameter<S, P, B>
 ) : ValueParameter<S, P, HCons<A, HCons<B, HNil>>> {

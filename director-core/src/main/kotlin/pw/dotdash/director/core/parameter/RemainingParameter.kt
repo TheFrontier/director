@@ -3,6 +3,7 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
@@ -17,10 +18,10 @@ import java.util.ArrayList
  * @receiver The parameter to repeat
  * @return The new value parameter
  */
-fun <S, P, V> ValueParameter<S, P, V>.remaining(): ValueParameter<S, P, List<V>> =
+fun <S, P : HList<P>, V> ValueParameter<S, P, V>.remaining(): ValueParameter<S, P, List<V>> =
     RemainingParameter(this)
 
-private data class RemainingParameter<S, P, V>(val parameter: ValueParameter<S, P, V>) : ValueParameter<S, P, List<V>> {
+private data class RemainingParameter<S, P : HList<P>, V>(val parameter: ValueParameter<S, P, V>) : ValueParameter<S, P, List<V>> {
     override fun parse(source: S, tokens: CommandTokens, previous: P): List<V> {
         val result = ArrayList<V>()
         while (tokens.hasNext()) {

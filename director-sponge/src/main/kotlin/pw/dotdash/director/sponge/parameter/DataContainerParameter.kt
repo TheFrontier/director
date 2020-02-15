@@ -7,6 +7,7 @@ import org.spongepowered.api.data.DataContainer
 import org.spongepowered.api.data.persistence.DataFormat
 import org.spongepowered.api.data.persistence.DataFormats
 import org.spongepowered.api.data.persistence.InvalidDataFormatException
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.parameter.string
 import pw.dotdash.director.core.value.ValueParameter
@@ -23,18 +24,18 @@ import java.io.IOException
  * @return The value parameter
  */
 @JvmOverloads
-fun <S, P> dataContainer(
+fun <S, P : HList<P>> dataContainer(
     format: DataFormat = DataFormats.JSON,
     reader: ValueParameter<S, P, String> = string()
 ): ValueParameter<S, P, DataContainer> =
     DataContainerParameter(format, reader)
 
-private data class DataContainerParameter<S, P>(
+private data class DataContainerParameter<S, P : HList<P>>(
     val format: DataFormat,
     val reader: ValueParameter<S, P, String>
 ) : ValueParameter<S, P, DataContainer> {
     override fun parse(source: S, tokens: CommandTokens, previous: P): DataContainer {
-        val data = this.reader.parse(source, tokens, previous)
+        val data: String = this.reader.parse(source, tokens, previous)
         try {
             return this.format.readFrom(data.byteInputStream(Charsets.UTF_8))
         } catch (e: InvalidDataFormatException) {

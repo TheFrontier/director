@@ -14,7 +14,7 @@ import pw.dotdash.director.core.tree.*
 internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     final override val children: Map<String, SimpleChildCommandTree<S, V, R>>,
     final override val argument: SimpleArgumentCommandTree<S, V, Any?, R>?,
-    final override val executor: CommandExecutor<in S, in V, out R>?
+    final override val executor: ((S, V) -> R)?
 ) : CommandTree<S, V, R> {
 
     override fun execute(source: S, tokens: CommandTokens, previous: V): R {
@@ -48,7 +48,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             // Otherwise, try to execute the command.
             if (this.executor != null) {
                 try {
-                    return this.executor.execute(source, previous)
+                    return this.executor.invoke(source, previous)
                 } catch (e: CommandException) {
                     throw e.wrap(usageParts)
                 }
@@ -155,7 +155,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
 
         protected val children = HashMap<String, SimpleChildCommandTree<S, V, R>>()
         protected var argument: SimpleArgumentCommandTree<S, V, in Any?, R>? = null
-        protected var executor: CommandExecutor<in S, in V, out R>? = null
+        protected var executor: ((S, V) -> R)? = null
 
         override fun addChild(child: ChildCommandTree<S, V, R>): B {
             require(child is SimpleChildCommandTree) { "Child trees must be made with ChildCommandTree.builder()" }
@@ -167,6 +167,14 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             return this as B
         }
 
+        override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B =
+            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(aliases).apply(init).build())
+
+
+        override fun addChild(vararg aliases: String, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B =
+            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(*aliases).apply(init).build())
+
+
         override fun setArgument(argument: ArgumentCommandTree<S, V, *, R>): B {
             require(argument is SimpleArgumentCommandTree) { "Argument trees must be made with ArgumentCommandTree.builder()" }
 
@@ -174,7 +182,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             return this as B
         }
 
-        override fun setExecutor(executor: CommandExecutor<in S, in V, out R>): B {
+        override fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): B =
+            this.setArgument(ArgumentCommandTree.builder<S, V, NV, R>().setParameter(parameter).apply(init).build())
+
+        override fun setExecutor(executor: (S, V) -> R): B {
             this.executor = executor
             return this as B
         }
@@ -187,7 +198,7 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
     override val tokenizer: InputTokenizer,
     children: Map<String, SimpleChildCommandTree<S, V, R>>,
     argument: SimpleArgumentCommandTree<S, V, in Any?, R>?,
-    executor: CommandExecutor<in S, in V, out R>?
+    executor: ((S, V) -> R)?
 ) : SimpleCommandTree<S, V, R>(children, argument, executor), RootCommandTree<S, V, R> {
 
     class Builder<S, V : HList<V>, R> :
@@ -233,7 +244,7 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
     override val aliases: List<String>,
     children: Map<String, SimpleChildCommandTree<S, P, R>>,
     argument: SimpleArgumentCommandTree<S, P, in Any?, R>?,
-    executor: CommandExecutor<in S, in P, out R>?
+    executor: ((S, P) -> R)?
 ) : SimpleCommandTree<S, P, R>(children, argument, executor), ChildCommandTree<S, P, R> {
 
     class Builder<S, P : HList<P>, R> :
@@ -265,7 +276,7 @@ internal class SimpleArgumentCommandTree<S, P : HList<P>, V, R>(
     override val parameter: Parameter<S, P, V>,
     children: Map<String, SimpleChildCommandTree<S, HCons<V, P>, R>>,
     argument: SimpleArgumentCommandTree<S, HCons<V, P>, in Any?, R>?,
-    executor: CommandExecutor<in S, in HCons<V, P>, out R>?
+    executor: ((S, HCons<V, P>) -> R)?
 ) : SimpleCommandTree<S, HCons<V, P>, R>(children, argument, executor), ArgumentCommandTree<S, P, V, R> {
 
     class Builder<S, P : HList<P>, V, R> :

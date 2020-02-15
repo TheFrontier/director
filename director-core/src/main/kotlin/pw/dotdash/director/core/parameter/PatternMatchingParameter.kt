@@ -3,13 +3,14 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 
 /**
  * Abstract parameter that matches values based on pattern.
  */
-abstract class PatternMatchingParameter<in S, in P, out V : Any> : ValueParameter<S, P, Iterable<V>> {
+abstract class PatternMatchingParameter<in S, in P : HList<@UnsafeVariance P>, out V : Any> : ValueParameter<S, P, Iterable<V>> {
 
     protected abstract fun getChoices(source: S, previous: P): Iterable<String>
 

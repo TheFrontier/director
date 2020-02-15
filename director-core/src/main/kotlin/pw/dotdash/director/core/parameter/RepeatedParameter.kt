@@ -3,15 +3,16 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 import java.util.ArrayList
 
-infix fun <S, P, V> ValueParameter<S, P, V>.repeated(count: Int): ValueParameter<S, P, List<V>> =
+infix fun <S, P : HList<P>, V> ValueParameter<S, P, V>.repeated(count: Int): ValueParameter<S, P, List<V>> =
     RepeatedParameter(this, count)
 
-private data class RepeatedParameter<S, P, V>(val parameter: ValueParameter<S, P, V>, val count: Int) : ValueParameter<S, P, List<V>> {
+private data class RepeatedParameter<S, P : HList<P>, V>(val parameter: ValueParameter<S, P, V>, val count: Int) : ValueParameter<S, P, List<V>> {
     init {
         require(this.count > 0) { "count must be a positive, non-zero number" }
     }

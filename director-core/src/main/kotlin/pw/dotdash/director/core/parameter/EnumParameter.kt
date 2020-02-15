@@ -3,6 +3,7 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.value.ValueParameter
 import kotlin.reflect.KClass
 
@@ -18,7 +19,7 @@ import kotlin.reflect.KClass
  * @param type The type of the enum
  * @return The value parameter
  */
-fun <T : Enum<T>> enums(type: KClass<T>): ValueParameter<Any?, Any?, Iterable<T>> =
+fun <T : Enum<T>> enums(type: KClass<T>): ValueParameter<Any?, HList<*>, Iterable<T>> =
     EnumParameter(type.java)
 
 /**
@@ -33,15 +34,15 @@ fun <T : Enum<T>> enums(type: KClass<T>): ValueParameter<Any?, Any?, Iterable<T>
  * @param T The type of the enum
  * @return The value parameter
  */
-inline fun <reified T : Enum<T>> enums(): ValueParameter<Any?, Any?, Iterable<T>> =
+inline fun <reified T : Enum<T>> enums(): ValueParameter<Any?, HList<*>, Iterable<T>> =
     enums(T::class)
 
-private data class EnumParameter<T : Enum<T>>(val type: Class<T>) : PatternMatchingParameter<Any?, Any?, T>() {
+private data class EnumParameter<T : Enum<T>>(val type: Class<T>) : PatternMatchingParameter<Any?, HList<*>, T>() {
     private val values: Map<String, T> = this.type.enumConstants.associateBy(Enum<T>::name)
 
-    override fun getChoices(source: Any?, previous: Any?): Iterable<String> =
+    override fun getChoices(source: Any?, previous: HList<*>): Iterable<String> =
         this.values.keys
 
-    override fun getValue(source: Any?, choice: String, previous: Any?): T =
+    override fun getValue(source: Any?, choice: String, previous: HList<*>): T =
         this.values[choice] ?: throw IllegalArgumentException("Input value '$choice' wasn't a ${this.type.simpleName}")
 }

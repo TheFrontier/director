@@ -3,6 +3,7 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 
@@ -12,10 +13,10 @@ import pw.dotdash.director.core.value.ValueParameter
  * @receiver The parameter to require only one value
  * @return The new value parameter
  */
-fun <S, P, V> ValueParameter<S, P, Iterable<V>>.onlyOne(): ValueParameter<S, P, V> =
+fun <S, P : HList<P>, V> ValueParameter<S, P, Iterable<V>>.onlyOne(): ValueParameter<S, P, V> =
     OnlyOneParameter(this)
 
-private data class OnlyOneParameter<S, P, V>(val parameter: ValueParameter<S, P, Iterable<V>>) : ValueParameter<S, P, V> {
+private data class OnlyOneParameter<S, P : HList<P>, V>(val parameter: ValueParameter<S, P, Iterable<V>>) : ValueParameter<S, P, V> {
     override fun parse(source: S, tokens: CommandTokens, previous: P): V =
         this.parameter.parse(source, tokens, previous).singleOrNull()
             ?: throw tokens.createError("Multiple values found. You must select only one.")

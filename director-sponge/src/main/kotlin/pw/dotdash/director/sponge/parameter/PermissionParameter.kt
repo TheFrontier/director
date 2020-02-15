@@ -4,6 +4,7 @@
 package pw.dotdash.director.sponge.parameter
 
 import org.spongepowered.api.service.permission.Subject
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 
@@ -15,10 +16,10 @@ import pw.dotdash.director.core.value.ValueParameter
  * @param permission The permission to check
  * @return The value parameter
  */
-infix fun <S : Subject, P, V> ValueParameter<S, P, V>.permission(permission: String): ValueParameter<S, P, V> =
+infix fun <S : Subject, P : HList<P>, V> ValueParameter<S, P, V>.permission(permission: String): ValueParameter<S, P, V> =
     PermissionParameter(this, permission)
 
-private data class PermissionParameter<S : Subject, P, V>(
+private data class PermissionParameter<S : Subject, P : HList<P>, V>(
     val parameter: ValueParameter<S, P, V>,
     val permission: String
 ) : ValueParameter<S, P, V> {

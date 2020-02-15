@@ -3,15 +3,16 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 
 @JvmOverloads
-fun <S, P, V : Any> ValueParameter<S, P, V>.optional(default: (() -> V)? = null, weak: Boolean = false): ValueParameter<S, P, V?> =
+fun <S, P : HList<P>, V : Any> ValueParameter<S, P, V>.optional(default: (() -> V)? = null, weak: Boolean = false): ValueParameter<S, P, V?> =
     OptionalParameter(this, default, weak)
 
-private data class OptionalParameter<S, P, V : Any>(
+private data class OptionalParameter<S, P : HList<P>, V : Any>(
     val parameter: ValueParameter<S, P, V>,
     val default: (() -> V)?,
     val weak: Boolean

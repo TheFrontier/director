@@ -8,6 +8,7 @@ import org.spongepowered.api.text.format.TextColor
 import org.spongepowered.api.text.serializer.TextParseException
 import org.spongepowered.api.text.serializer.TextSerializer
 import org.spongepowered.api.text.serializer.TextSerializers
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.parameter.onlyOne
 import pw.dotdash.director.core.value.ValueParameter
@@ -20,10 +21,10 @@ import pw.dotdash.director.core.value.ValueParameter
  * @return The value parameter
  */
 @JvmOverloads
-fun <S, P> ValueParameter<S, P, String>.text(serializer: TextSerializer = TextSerializers.FORMATTING_CODE): ValueParameter<S, P, Text> =
+fun <S, P : HList<P>> ValueParameter<S, P, String>.text(serializer: TextSerializer = TextSerializers.FORMATTING_CODE): ValueParameter<S, P, Text> =
     TextParameter(this, serializer)
 
-private data class TextParameter<S, P>(
+private data class TextParameter<S, P : HList<P>>(
     val reader: ValueParameter<S, P, String>,
     val serializer: TextSerializer
 ) : ValueParameter<S, P, Text> {
@@ -50,6 +51,6 @@ private data class TextParameter<S, P>(
         this.reader.getUsage(source, key)
 }
 
-fun textColors(): ValueParameter<Any?, Any?, Iterable<TextColor>> = catalogTypes()
+fun textColors(): ValueParameter<Any?, HList<*>, Iterable<TextColor>> = catalogTypes()
 
-fun textColor(): ValueParameter<Any?, Any?, TextColor> = textColors().onlyOne()
+fun textColor(): ValueParameter<Any?, HList<*>, TextColor> = textColors().onlyOne()

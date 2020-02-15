@@ -3,6 +3,7 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
@@ -14,7 +15,7 @@ import pw.dotdash.director.core.value.ValueParameter
  * @receiver The parameter to first attempt
  * @return The new value parameter
  */
-inline fun <S, P, reified V> ValueParameter<S, P, V>.orSource(): ValueParameter<S, P, V> =
+inline fun <S, P : HList<P>, reified V> ValueParameter<S, P, V>.orSource(): ValueParameter<S, P, V> =
     object : ValueParameter<S, P, V> {
         override fun parse(source: S, tokens: CommandTokens, previous: P): V {
             val snapshot: CommandTokens.Snapshot = tokens.snapshot

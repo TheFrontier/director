@@ -5,6 +5,7 @@ package pw.dotdash.director.sponge.parameter
 
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.plugin.PluginContainer
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.parameter.PatternMatchingParameter
 import pw.dotdash.director.core.parameter.onlyOne
 import pw.dotdash.director.core.value.ValueParameter
@@ -18,7 +19,7 @@ import pw.dotdash.director.core.value.ValueParameter
  *
  * If you only want one plugin, use [plugin] or [onlyOne].
  */
-fun plugins(): ValueParameter<Any?, Any?, Iterable<PluginContainer>> = PluginContainerParameter
+fun plugins(): ValueParameter<Any?, HList<*>, Iterable<PluginContainer>> = PluginContainerParameter
 
 /**
  * Consumes tokens to output a [PluginContainer].
@@ -27,13 +28,13 @@ fun plugins(): ValueParameter<Any?, Any?, Iterable<PluginContainer>> = PluginCon
  * - A plugin's id
  * - A regex matching the beginning of a plugin's id
  */
-fun plugin(): ValueParameter<Any?, Any?, PluginContainer> = plugins().onlyOne()
+fun plugin(): ValueParameter<Any?, HList<*>, PluginContainer> = plugins().onlyOne()
 
-private object PluginContainerParameter : PatternMatchingParameter<Any?, Any?, PluginContainer>() {
-    override fun getChoices(source: Any?, previous: Any?): Iterable<String> =
+private object PluginContainerParameter : PatternMatchingParameter<Any?, HList<*>, PluginContainer>() {
+    override fun getChoices(source: Any?, previous: HList<*>): Iterable<String> =
         Sponge.getPluginManager().plugins.map(PluginContainer::getId)
 
-    override fun getValue(source: Any?, choice: String, previous: Any?): PluginContainer =
+    override fun getValue(source: Any?, choice: String, previous: HList<*>): PluginContainer =
         Sponge.getPluginManager().getPlugin(choice)
             .orElseThrow { IllegalArgumentException("Input value '$choice' wasn't a plugin") }
 

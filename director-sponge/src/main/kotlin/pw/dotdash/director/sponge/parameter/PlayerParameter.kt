@@ -6,6 +6,7 @@ package pw.dotdash.director.sponge.parameter
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.command.CommandSource
 import org.spongepowered.api.entity.living.player.Player
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.parameter.onlyOne
 import pw.dotdash.director.core.parameter.orSource
 import pw.dotdash.director.core.value.ValueParameter
@@ -21,7 +22,7 @@ import pw.dotdash.director.core.value.ValueParameter
  * If you only want one player, use [player] or [onlyOne].
  * If you want to also allow the source, use [playerOrSource] or [orSource].
  */
-fun players(): ValueParameter<CommandSource, Any?, Iterable<Player>> = PlayerParameter
+fun players(): ValueParameter<CommandSource, HList<*>, Iterable<Player>> = PlayerParameter
 
 /**
  * Consumes tokens to output a [Player].
@@ -33,7 +34,7 @@ fun players(): ValueParameter<CommandSource, Any?, Iterable<Player>> = PlayerPar
  *
  * If you want to also allow the source, use [playerOrSource] or [orSource].
  */
-fun player(): ValueParameter<CommandSource, Any?, Player> = players().onlyOne()
+fun player(): ValueParameter<CommandSource, HList<*>, Player> = players().onlyOne()
 
 /**
  * Consumes tokens to output a [Player].
@@ -45,13 +46,13 @@ fun player(): ValueParameter<CommandSource, Any?, Player> = players().onlyOne()
  *
  * If failed, will try to use the source as the output.
  */
-fun playerOrSource(): ValueParameter<CommandSource, Any?, Player> = player().orSource()
+fun playerOrSource(): ValueParameter<CommandSource, HList<*>, Player> = player().orSource()
 
-private object PlayerParameter : SelectorParameter<Any?, Player>(Player::class) {
-    override fun getChoices(source: CommandSource, previous: Any?): Iterable<String> =
+private object PlayerParameter : SelectorParameter<HList<*>, Player>(Player::class) {
+    override fun getChoices(source: CommandSource, previous: HList<*>): Iterable<String> =
         Sponge.getServer().onlinePlayers.map(Player::getName)
 
-    override fun getValue(source: CommandSource, choice: String, previous: Any?): Player =
+    override fun getValue(source: CommandSource, choice: String, previous: HList<*>): Player =
         Sponge.getServer().getPlayer(choice)
             .orElseThrow { IllegalArgumentException("Input value '$choice' wasn't a player") }
 

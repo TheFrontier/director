@@ -8,6 +8,7 @@ import org.spongepowered.api.service.permission.PermissionService
 import org.spongepowered.api.service.permission.Subject
 import org.spongepowered.api.service.permission.SubjectCollection
 import pw.dotdash.director.core.HCons
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.parameter.PatternMatchingParameter
 import pw.dotdash.director.core.parameter.onlyOne
 import pw.dotdash.director.core.value.ValueParameter
@@ -21,7 +22,7 @@ import pw.dotdash.director.core.value.ValueParameter
  *
  * If you only want one subject collection, use [subjectCollection] or [onlyOne].
  */
-fun subjectCollections(): ValueParameter<Any?, Any?, Iterable<SubjectCollection>> = SubjectCollectionParameter
+fun subjectCollections(): ValueParameter<Any?, HList<*>, Iterable<SubjectCollection>> = SubjectCollectionParameter
 
 /**
  * Consumes tokens to output a [SubjectCollection].
@@ -30,13 +31,13 @@ fun subjectCollections(): ValueParameter<Any?, Any?, Iterable<SubjectCollection>
  * - A subject collection's identifier
  * - A regex matching the beginning of a subject collection's identifier
  */
-fun subjectCollection(): ValueParameter<Any?, Any?, SubjectCollection> = subjectCollections().onlyOne()
+fun subjectCollection(): ValueParameter<Any?, HList<*>, SubjectCollection> = subjectCollections().onlyOne()
 
-private object SubjectCollectionParameter : PatternMatchingParameter<Any?, Any?, SubjectCollection>() {
-    override fun getChoices(source: Any?, previous: Any?): Iterable<String> =
+private object SubjectCollectionParameter : PatternMatchingParameter<Any?, HList<*>, SubjectCollection>() {
+    override fun getChoices(source: Any?, previous: HList<*>): Iterable<String> =
         Sponge.getServiceManager().provideUnchecked(PermissionService::class.java).loadedCollections.keys
 
-    override fun getValue(source: Any?, choice: String, previous: Any?): SubjectCollection =
+    override fun getValue(source: Any?, choice: String, previous: HList<*>): SubjectCollection =
         Sponge.getServiceManager().provideUnchecked(PermissionService::class.java).getCollection(choice)
             .orElseThrow { IllegalArgumentException("Input value '$choice' wasn't a subject collection") }
 
@@ -88,7 +89,7 @@ private object SubjectParameter : PatternMatchingParameter<Any?, HCons<SubjectCo
  * @param collection The supplier of the subject collection to fetch from
  * @return The value parameter
  */
-fun subjectsOf(collection: () -> SubjectCollection): ValueParameter<Any?, Any?, Iterable<Subject>> = SubjectOfParameter(collection)
+fun subjectsOf(collection: () -> SubjectCollection): ValueParameter<Any?, HList<*>, Iterable<Subject>> = SubjectOfParameter(collection)
 
 /**
  * Consumes tokens to output a [Subject].
@@ -100,7 +101,7 @@ fun subjectsOf(collection: () -> SubjectCollection): ValueParameter<Any?, Any?, 
  * @param collection The supplier of the subject collection to fetch from
  * @return The value parameter
  */
-fun subjectOf(collection: () -> SubjectCollection): ValueParameter<Any?, Any?, Subject> = subjectsOf(collection).onlyOne()
+fun subjectOf(collection: () -> SubjectCollection): ValueParameter<Any?, HList<*>, Subject> = subjectsOf(collection).onlyOne()
 
 /**
  * Consumes tokens to output an [Iterable] of [Subject]s.
@@ -114,7 +115,7 @@ fun subjectOf(collection: () -> SubjectCollection): ValueParameter<Any?, Any?, S
  * @param collectionId The identifier of the subject collection to fetch from
  * @return The value parameter
  */
-fun subjectsOf(collectionId: String): ValueParameter<Any?, Any?, Iterable<Subject>> = subjectsOf {
+fun subjectsOf(collectionId: String): ValueParameter<Any?, HList<*>, Iterable<Subject>> = subjectsOf {
     Sponge.getServiceManager().provideUnchecked(PermissionService::class.java).getCollection(collectionId)
         .orElseThrow { IllegalArgumentException("No subject collection found with name '$collectionId'") }
 }
@@ -129,7 +130,7 @@ fun subjectsOf(collectionId: String): ValueParameter<Any?, Any?, Iterable<Subjec
  * @param collectionId The identifier of the subject collection to fetch from
  * @return The value parameter
  */
-fun subjectOf(collectionId: String): ValueParameter<Any?, Any?, Subject> = subjectsOf(collectionId).onlyOne()
+fun subjectOf(collectionId: String): ValueParameter<Any?, HList<*>, Subject> = subjectsOf(collectionId).onlyOne()
 
 /**
  * Consumes tokens to output an [Iterable] of [Subject]s in the [PermissionService.SUBJECTS_USER] collection.
@@ -140,7 +141,7 @@ fun subjectOf(collectionId: String): ValueParameter<Any?, Any?, Subject> = subje
  *
  * If you only want one subject, use [userSubject] or [onlyOne].
  */
-fun userSubjects(): ValueParameter<Any?, Any?, Iterable<Subject>> = subjectsOf(PermissionService.SUBJECTS_USER)
+fun userSubjects(): ValueParameter<Any?, HList<*>, Iterable<Subject>> = subjectsOf(PermissionService.SUBJECTS_USER)
 
 /**
  * Consumes tokens to output an [Iterable] of [Subject]s in the [PermissionService.SUBJECTS_USER] collection.
@@ -149,7 +150,7 @@ fun userSubjects(): ValueParameter<Any?, Any?, Iterable<Subject>> = subjectsOf(P
  * - A subject's identifier
  * - A regex matching the beginning of at least one subject's identifier
  */
-fun userSubject(): ValueParameter<Any?, Any?, Subject> = subjectOf(PermissionService.SUBJECTS_USER)
+fun userSubject(): ValueParameter<Any?, HList<*>, Subject> = subjectOf(PermissionService.SUBJECTS_USER)
 
 /**
  * Consumes tokens to output an [Iterable] of [Subject]s in the [PermissionService.SUBJECTS_GROUP] collection.
@@ -160,7 +161,7 @@ fun userSubject(): ValueParameter<Any?, Any?, Subject> = subjectOf(PermissionSer
  *
  * If you only want one subject, use [groupSubject] or [onlyOne].
  */
-fun groupSubjects(): ValueParameter<Any?, Any?, Iterable<Subject>> = subjectsOf(PermissionService.SUBJECTS_GROUP)
+fun groupSubjects(): ValueParameter<Any?, HList<*>, Iterable<Subject>> = subjectsOf(PermissionService.SUBJECTS_GROUP)
 
 /**
  * Consumes tokens to output an [Iterable] of [Subject]s in the [PermissionService.SUBJECTS_GROUP] collection.
@@ -169,13 +170,13 @@ fun groupSubjects(): ValueParameter<Any?, Any?, Iterable<Subject>> = subjectsOf(
  * - A subject's identifier
  * - A regex matching the beginning of at least one subject's identifier
  */
-fun groupSubject(): ValueParameter<Any?, Any?, Subject> = subjectOf(PermissionService.SUBJECTS_GROUP)
+fun groupSubject(): ValueParameter<Any?, HList<*>, Subject> = subjectOf(PermissionService.SUBJECTS_GROUP)
 
-private data class SubjectOfParameter(val collection: () -> SubjectCollection) : PatternMatchingParameter<Any?, Any?, Subject>() {
-    override fun getChoices(source: Any?, previous: Any?): Iterable<String> =
+private data class SubjectOfParameter(val collection: () -> SubjectCollection) : PatternMatchingParameter<Any?, HList<*>, Subject>() {
+    override fun getChoices(source: Any?, previous: HList<*>): Iterable<String> =
         collection().loadedSubjects.map(Subject::getIdentifier)
 
-    override fun getValue(source: Any?, choice: String, previous: Any?): Subject =
+    override fun getValue(source: Any?, choice: String, previous: HList<*>): Subject =
         collection().getSubject(choice)
             .orElseThrow { IllegalArgumentException("Input value '$choice' wasn't a subject") }
 }

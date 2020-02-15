@@ -3,6 +3,7 @@
 
 package pw.dotdash.director.core.parameter
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 
@@ -11,10 +12,10 @@ import pw.dotdash.director.core.value.ValueParameter
  *
  * @return The new value parameter
  */
-fun <S> source(): ValueParameter<S, Any?, S> = @Suppress("UNCHECKED_CAST") (SourceParameter as ValueParameter<S, Any?, S>)
+fun <S> source(): ValueParameter<S, HList<*>, S> = @Suppress("UNCHECKED_CAST") (SourceParameter as ValueParameter<S, HList<*>, S>)
 
-private object SourceParameter : ValueParameter<Any?, Any?, Any?> {
-    override fun parse(source: Any?, tokens: CommandTokens, previous: Any?): Any? = source
+private object SourceParameter : ValueParameter<Any?, HList<*>, Any?> {
+    override fun parse(source: Any?, tokens: CommandTokens, previous: HList<*>): Any? = source
 
     override fun getUsage(source: Any?, key: String): String = ""
 }

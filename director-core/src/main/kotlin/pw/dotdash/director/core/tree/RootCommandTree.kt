@@ -2,6 +2,7 @@ package pw.dotdash.director.core.tree
 
 import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.HNil
+import pw.dotdash.director.core.Parameter
 import pw.dotdash.director.core.lexer.InputTokenizer
 import pw.dotdash.director.core.tree.simple.SimpleRootCommandTree
 
@@ -25,9 +26,15 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
 
         override fun addChild(child: ChildCommandTree<S, V, R>): Builder<S, V, R>
 
+        override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): Builder<S, V, R>
+
+        override fun addChild(vararg aliases: String, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): Builder<S, V, R>
+
         override fun setArgument(argument: ArgumentCommandTree<S, V, *, R>): Builder<S, V, R>
 
-        override fun setExecutor(executor: CommandExecutor<in S, in V, out R>): Builder<S, V, R>
+        override fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): Builder<S, V, R>
+
+        override fun setExecutor(executor: (S, V) -> R): Builder<S, V, R>
 
         fun build(): RootCommandTree<S, V, R>
     }

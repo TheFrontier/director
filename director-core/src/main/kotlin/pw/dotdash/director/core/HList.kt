@@ -40,33 +40,33 @@ class HCons<out H, out T : HList<T>>(val head: H, val tail: T) : HList<HCons<H, 
 }
 
 @JvmName("_1")
-inline operator fun <A> HCons<A, HNil>.component1(): A =
+inline operator fun <A> HCons<A, *>.component1(): A =
     this.head
 
 @JvmName("_2")
-inline operator fun <B> HCons<*, HCons<B, HNil>>.component2(): B =
+inline operator fun <B> HCons<*, HCons<B, *>>.component2(): B =
     this.tail.head
 
 @JvmName("_3")
-inline operator fun <C> HCons<*, HCons<*, HCons<C, HNil>>>.component3(): C =
+inline operator fun <C> HCons<*, HCons<*, HCons<C, *>>>.component3(): C =
     this.tail.tail.head
 
 @JvmName("_4")
-inline operator fun <D> HCons<*, HCons<*, HCons<*, HCons<D, HNil>>>>.component4(): D =
+inline operator fun <D> HCons<*, HCons<*, HCons<*, HCons<D, *>>>>.component4(): D =
     this.tail.tail.tail.head
 
 @JvmName("_5")
-inline operator fun <E> HCons<*, HCons<*, HCons<*, HCons<*, HCons<E, HNil>>>>>.component5(): E =
+inline operator fun <E> HCons<*, HCons<*, HCons<*, HCons<*, HCons<E, *>>>>>.component5(): E =
     this.tail.tail.tail.tail.head
 
 @JvmName("_6")
-inline operator fun <F> HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<F, HNil>>>>>>.component6(): F =
+inline operator fun <F> HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<F, *>>>>>>.component6(): F =
     this.tail.tail.tail.tail.tail.head
 
 @JvmName("_7")
-inline operator fun <G> HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<G, HNil>>>>>>>.component7(): G =
+inline operator fun <G> HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<G, *>>>>>>>.component7(): G =
     this.tail.tail.tail.tail.tail.tail.head
 
 @JvmName("_8")
-inline operator fun <H> HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<H, HNil>>>>>>>>.component8(): H =
+inline operator fun <H> HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<*, HCons<H, *>>>>>>>>.component8(): H =
     this.tail.tail.tail.tail.tail.tail.tail.head

@@ -9,7 +9,7 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
 
     val argument: ArgumentCommandTree<S, V, *, R>?
 
-    val executor: CommandExecutor<in S, in V, out R>?
+    val executor: ((S, V) -> R)?
 
     interface Builder<S, V : HList<V>, R> {
 
@@ -26,6 +26,6 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
         fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): Builder<S, V, R> =
             this.setArgument(ArgumentCommandTree.builder<S, V, NV, R>().setParameter(parameter).apply(init).build())
 
-        fun setExecutor(executor: CommandExecutor<in S, in V, out R>): Builder<S, V, R>
+        fun setExecutor(executor: (S, V) -> R): Builder<S, V, R>
     }
 }

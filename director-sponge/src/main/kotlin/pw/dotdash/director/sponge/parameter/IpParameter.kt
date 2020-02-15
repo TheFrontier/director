@@ -6,21 +6,22 @@ package pw.dotdash.director.sponge.parameter
 import org.spongepowered.api.command.CommandSource
 import org.spongepowered.api.command.source.RemoteSource
 import org.spongepowered.api.entity.living.player.Player
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.value.ValueParameter
 import java.net.InetAddress
 import java.net.UnknownHostException
 
-fun ip(): ValueParameter<CommandSource, Any?, InetAddress> = ip(player(), false)
+fun ip(): ValueParameter<CommandSource, HList<*>, InetAddress> = ip(player(), false)
 
-fun ipOrSource(): ValueParameter<CommandSource, Any?, InetAddress> = ip(player(), true)
+fun ipOrSource(): ValueParameter<CommandSource, HList<*>, InetAddress> = ip(player(), true)
 
 @JvmOverloads
-fun <S, P> ip(tryPlayer: ValueParameter<S, P, Player>, orSource: Boolean = false): ValueParameter<S, P, InetAddress> =
+fun <S, P : HList<P>> ip(tryPlayer: ValueParameter<S, P, Player>, orSource: Boolean = false): ValueParameter<S, P, InetAddress> =
     IpParameter(tryPlayer, orSource)
 
-private data class IpParameter<S, P>(
+private data class IpParameter<S, P : HList<P>>(
     val tryPlayer: ValueParameter<S, P, Player>,
     val orSource: Boolean
 ) : ValueParameter<S, P, InetAddress> {
@@ -33,8 +34,8 @@ private data class IpParameter<S, P>(
             }
         }
 
-        val snapshot = tokens.snapshot
-        val token = tokens.next()
+        val snapshot: CommandTokens.Snapshot = tokens.snapshot
+        val token: String = tokens.next()
 
         try {
             return InetAddress.getByName(token)

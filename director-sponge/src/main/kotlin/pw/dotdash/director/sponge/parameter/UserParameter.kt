@@ -7,6 +7,7 @@ import org.spongepowered.api.Sponge
 import org.spongepowered.api.command.CommandSource
 import org.spongepowered.api.entity.living.player.User
 import org.spongepowered.api.service.user.UserStorageService
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.parameter.onlyOne
 import pw.dotdash.director.core.parameter.orSource
 import pw.dotdash.director.core.util.unwrap
@@ -23,7 +24,7 @@ import pw.dotdash.director.core.value.ValueParameter
  * If you only want one user, use [user] or [onlyOne].
  * If you want to also allow the source, use [userOrSource] or [orSource].
  */
-fun users(): ValueParameter<CommandSource, Any?, Iterable<User>> = UserParameter
+fun users(): ValueParameter<CommandSource, HList<*>, Iterable<User>> = UserParameter
 
 /**
  * Consumes tokens to output a [User].
@@ -35,7 +36,7 @@ fun users(): ValueParameter<CommandSource, Any?, Iterable<User>> = UserParameter
  *
  * If you want to also allow the source, use [userOrSource] or [orSource].
  */
-fun user(): ValueParameter<CommandSource, Any?, User> = users().onlyOne()
+fun user(): ValueParameter<CommandSource, HList<*>, User> = users().onlyOne()
 
 /**
  * Consumes tokens to output a [User].
@@ -47,16 +48,16 @@ fun user(): ValueParameter<CommandSource, Any?, User> = users().onlyOne()
  *
  * If failed, will try to use the source as the output.
  */
-fun userOrSource(): ValueParameter<CommandSource, Any?, User> = user().orSource()
+fun userOrSource(): ValueParameter<CommandSource, HList<*>, User> = user().orSource()
 
-private object UserParameter : SelectorParameter<Any?, User>(User::class) {
-    override fun getChoices(source: CommandSource, previous: Any?): Iterable<String> =
+private object UserParameter : SelectorParameter<HList<*>, User>(User::class) {
+    override fun getChoices(source: CommandSource, previous: HList<*>): Iterable<String> =
         Sponge.getServiceManager().provideUnchecked(UserStorageService::class.java).all.asSequence()
             .take(500)
             .mapNotNull { it.name.unwrap() }
             .toList()
 
-    override fun getValue(source: CommandSource, choice: String, previous: Any?): User =
+    override fun getValue(source: CommandSource, choice: String, previous: HList<*>): User =
         Sponge.getServiceManager().provideUnchecked(UserStorageService::class.java)[choice]
             .orElseThrow { IllegalArgumentException("Input value '$choice' was not a user") }
 

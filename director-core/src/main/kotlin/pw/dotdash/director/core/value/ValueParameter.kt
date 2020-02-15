@@ -1,9 +1,10 @@
 package pw.dotdash.director.core.value
 
+import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.Parameter
 import pw.dotdash.director.core.lexer.CommandTokens
 
-interface ValueParameter<in S, in P, out V> : ValueParser<S, P, V>, ValueCompleter<S, P>, ValueUsage<S> {
+interface ValueParameter<in S, in P : HList<@UnsafeVariance P>, out V> : ValueParser<S, P, V>, ValueCompleter<S, P>, ValueUsage<S> {
 
     override fun complete(source: S, tokens: CommandTokens, previous: P): List<String> = emptyList()
 
