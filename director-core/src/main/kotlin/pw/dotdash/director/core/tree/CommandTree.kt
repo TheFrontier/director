@@ -2,6 +2,7 @@ package pw.dotdash.director.core.tree
 
 import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.Parameter
+import java.util.function.Consumer
 
 interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecutor<S, V, R> {
 
@@ -15,16 +16,19 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
 
         fun addChild(child: ChildCommandTree<S, V, R>): Builder<S, V, R>
 
-        fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): Builder<S, V, R> =
-            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(aliases).apply(init).build())
+        fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): Builder<S, V, R>
 
-        fun addChild(vararg aliases: String, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): Builder<S, V, R> =
-            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(*aliases).apply(init).build())
+        fun addChild(aliases: List<String>, init: Consumer<ChildCommandTree.Builder<S, V, R>>): Builder<S, V, R>
+
+        fun addChild(vararg aliases: String, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): Builder<S, V, R>
+
+        fun addChild(vararg aliases: String, init: Consumer<ChildCommandTree.Builder<S, V, R>>): Builder<S, V, R>
 
         fun setArgument(argument: ArgumentCommandTree<S, V, *, R>): Builder<S, V, R>
 
-        fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): Builder<S, V, R> =
-            this.setArgument(ArgumentCommandTree.builder<S, V, NV, R>().setParameter(parameter).apply(init).build())
+        fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): Builder<S, V, R>
+
+        fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: Consumer<ArgumentCommandTree.Builder<S, V, NV, R>>): Builder<S, V, R>
 
         fun setExecutor(executor: (S, V) -> R): Builder<S, V, R>
     }
