@@ -5,7 +5,7 @@ plugins {
 
 allprojects {
     group = "pw.dotdash"
-    version = "0.10.0"
+    version = "0.11.0"
 
     apply(plugin = "maven")
 }
