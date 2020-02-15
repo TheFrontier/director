@@ -13,6 +13,7 @@ import org.spongepowered.api.world.Location
 import org.spongepowered.api.world.World
 import pw.dotdash.director.core.HList
 import pw.dotdash.director.core.HNil
+import pw.dotdash.director.core.exception.ArgumentParseException
 import pw.dotdash.director.core.exception.TreeCommandException
 import pw.dotdash.director.core.lexer.SimpleCommandTokens
 import pw.dotdash.director.core.tree.RootCommandTree
@@ -60,9 +61,15 @@ class CommandTreeCallable<T : HList<T>> @JvmOverloads constructor(
     }
 
     private fun createErrorMessage(e: TreeCommandException): Text {
+        val cause: pw.dotdash.director.core.exception.CommandException = e.cause
+
         val builder: Text.Builder = Text.builder().color(RED)
             .append(ERROR_FROM).append(this.rootAlias).append(COLON)
-            .append(NEW_LINE).append(Text.of(e.cause.message))
+            .append(NEW_LINE).append(Text.of(cause.message))
+
+        if (cause is ArgumentParseException) {
+            builder.append(NEW_LINE).append(Text.of(cause.annotatedPosition))
+        }
 
         if (e.cause.showUsage) {
             builder.append(NEW_LINE).append(NEW_LINE)
