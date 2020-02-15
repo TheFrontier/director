@@ -24,6 +24,15 @@ interface ChildCommandTree<in S, in P : HList<@UnsafeVariance P>, out R> : Comma
 
     companion object {
         @JvmStatic
-        fun <S, P : HList<P>, R> builder(): Builder<S, P, R> = SimpleChildCommandTree.Builder()
+        fun <S, P : HList<P>, R> builder(): Builder<S, P, R> =
+            SimpleChildCommandTree.Builder()
+
+        @JvmStatic
+        fun <S, P : HList<P>, R> builder(aliases: List<String>): Builder<S, P, R> =
+            SimpleChildCommandTree.Builder<S, P, R>().setAliases(aliases)
+
+        @JvmStatic
+        fun <S, P : HList<P>, R> builder(vararg aliases: String): Builder<S, P, R> =
+            SimpleChildCommandTree.Builder<S, P, R>().setAliases(*aliases)
     }
 }

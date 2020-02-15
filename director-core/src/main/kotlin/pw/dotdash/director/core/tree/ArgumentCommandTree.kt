@@ -24,6 +24,12 @@ interface ArgumentCommandTree<in S, in P : HList<@UnsafeVariance P>, V, out R> :
 
     companion object {
         @JvmStatic
-        fun <S, P : HList<P>, V, R> builder(): Builder<S, P, V, R> = SimpleArgumentCommandTree.Builder()
+        fun <S, P : HList<P>, V, R> builder(): Builder<S, P, V, R> =
+            SimpleArgumentCommandTree.Builder()
+
+        @JvmStatic
+        fun <S, P : HList<P>, V, R> builder(parameter: Parameter<S, P, V>): Builder<S, P, V, R> =
+            SimpleArgumentCommandTree.Builder<S, P, V, R>().setParameter(parameter)
+
     }
 }
