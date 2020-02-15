@@ -23,6 +23,19 @@ fun <T : Enum<T>> enums(type: KClass<T>): ValueParameter<Any?, HList<*>, Iterabl
     EnumParameter(type.java)
 
 /**
+ * Consumes tokens to output a [T] which is a [Enum].
+ *
+ * Acceptable inputs:
+ * - An enum's name
+ * - A regex matching the beginning of a enum's name
+ *
+ * @param type The type of the enum
+ * @return The value parameter
+ */
+fun <T : Enum<T>> enum(type: KClass<T>): ValueParameter<Any?, HList<*>, T> =
+    enums(type).onlyOne()
+
+/**
  * Consumes tokens to output an [Iterable] of [T]s which are [Enum]s.
  *
  * Acceptable inputs:
@@ -36,6 +49,19 @@ fun <T : Enum<T>> enums(type: KClass<T>): ValueParameter<Any?, HList<*>, Iterabl
  */
 inline fun <reified T : Enum<T>> enums(): ValueParameter<Any?, HList<*>, Iterable<T>> =
     enums(T::class)
+
+/**
+ * Consumes tokens to output a [T] which is a [Enum].
+ *
+ * Acceptable inputs:
+ * - An enum's name
+ * - A regex matching the beginning of a enum's name
+ *
+ * @param T The type of the enum
+ * @return The value parameter
+ */
+inline fun <reified T : Enum<T>> enum(): ValueParameter<Any?, HList<*>, T> =
+    enums<T>().onlyOne()
 
 private data class EnumParameter<T : Enum<T>>(val type: Class<T>) : PatternMatchingParameter<Any?, HList<*>, T>() {
     private val values: Map<String, T> = this.type.enumConstants.associateBy(Enum<T>::name)
