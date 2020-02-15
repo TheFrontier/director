@@ -4,6 +4,8 @@ A general-purpose, type-safe, tree-based command library.
 
 ## Gradle
 
+Current Version: [![Release](https://jitpack.io/v/TheFrontier/director.svg)](https://jitpack.io/#TheFrontier/director)
+
 ```kotlin
 repositories {
     maven("https://jitpack.io")
