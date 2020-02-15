@@ -1,3 +1,6 @@
+@file:JvmMultifileClass
+@file:JvmName("SpongeValueParameters")
+
 package pw.dotdash.director.sponge.parameter
 
 import org.spongepowered.api.command.CommandSource
