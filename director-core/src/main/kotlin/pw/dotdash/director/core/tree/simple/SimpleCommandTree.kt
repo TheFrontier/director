@@ -195,10 +195,31 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
     override val aliases: List<String>,
     override val initial: V,
     override val tokenizer: InputTokenizer,
+    override val description: String?,
+    override val extendedDescription: String?,
     children: Map<String, SimpleChildCommandTree<S, V, R>>,
     argument: SimpleArgumentCommandTree<S, V, in Any?, R>?,
     executor: ((S, V) -> R)?
 ) : SimpleCommandTree<S, V, R>(children, argument, executor), RootCommandTree<S, V, R> {
+
+    private val argSequence: List<SimpleArgumentCommandTree<S, *, *, R>> =
+        generateSequence<SimpleArgumentCommandTree<S, *, *, R>>(this.argument) {
+            it.argument
+        }.toList()
+
+    override fun getUsage(source: S): String {
+        val builder = StringBuilder()
+            .append(this.aliases.first())
+            .append(' ')
+
+        if (this.children.isNotEmpty()) {
+            this.children.keys.joinTo(builder, separator = "|", postfix = "|")
+        }
+
+        this.argSequence.joinTo(builder, separator = " ") { it.parameter.getUsage(source) }
+
+        return builder.toString()
+    }
 
     class Builder<S, V : HList<V>, R> :
         SimpleCommandTree.Builder<Builder<S, V, R>, S, V, R>(),
@@ -207,6 +228,8 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
         private var aliases: List<String>? = null
         private var initial: V? = null
         private var tokenizer: InputTokenizer = QuotedInputTokenizer.DEFAULT
+        private var description: String? = null
+        private var extendedDescription: String? = null
 
         override fun setAliases(aliases: Iterable<String>): Builder<S, V, R> {
             this.aliases = aliases.toList()
@@ -228,10 +251,22 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
             return this
         }
 
+        override fun setDescription(description: String): RootCommandTree.Builder<S, V, R> {
+            this.description =description
+            return this
+        }
+
+        override fun setExtendedDescription(extendedDescription: String): RootCommandTree.Builder<S, V, R> {
+            this.extendedDescription = extendedDescription
+            return this
+        }
+
         override fun build(): RootCommandTree<S, V, R> = SimpleRootCommandTree(
             aliases = checkNotNull(this.aliases),
             initial = checkNotNull(this.initial),
             tokenizer = checkNotNull(this.tokenizer),
+            description = this.description,
+            extendedDescription = this.extendedDescription,
             children = this.children,
             argument = this.argument,
             executor = this.executor

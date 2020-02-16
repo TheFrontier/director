@@ -8,7 +8,7 @@ interface ValueParameter<in S, in P : HList<@UnsafeVariance P>, out V> : ValuePa
 
     override fun complete(source: S, tokens: CommandTokens, previous: P): List<String> = emptyList()
 
-    override fun getUsage(source: S, key: String): String = key
+    override fun getUsage(source: S, key: String): String = "<$key>"
 
     infix fun key(key: String): Parameter<S, P, V> = Parameter(key, this)
 

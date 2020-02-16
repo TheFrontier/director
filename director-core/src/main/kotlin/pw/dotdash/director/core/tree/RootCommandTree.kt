@@ -14,6 +14,12 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
 
     val tokenizer: InputTokenizer
 
+    val description: String?
+
+    val extendedDescription: String?
+
+    fun getUsage(source: S): String
+
     interface Builder<S, V : HList<V>, R> : CommandTree.Builder<S, V, R> {
 
         fun setAliases(aliases: Iterable<String>): Builder<S, V, R>
@@ -23,6 +29,10 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
         fun setInitial(initial: V): Builder<S, V, R>
 
         fun setTokenizer(tokenizer: InputTokenizer): Builder<S, V, R>
+
+        fun setDescription(description: String): Builder<S, V, R>
+
+        fun setExtendedDescription(extendedDescription: String): Builder<S, V, R>
 
         override fun addChild(child: ChildCommandTree<S, V, R>): Builder<S, V, R>
 
