@@ -188,7 +188,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     }
 
     private fun CommandException.wrap(usageParts: List<String>): TreeCommandException =
-        TreeCommandException(this, this@SimpleCommandTree, usageParts, this@SimpleCommandTree.children.keys.toList())
+        TreeCommandException(this, this@SimpleCommandTree, usageParts, this@SimpleCommandTree.children.values.map { it.aliases.first() })
 
     private val argSequence: Sequence<SimpleArgumentCommandTree<S, *, *, R>> =
         generateSequence<SimpleArgumentCommandTree<S, *, *, R>>(this.argument) {

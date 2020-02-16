@@ -24,7 +24,7 @@ class CommandTreeCallable<V : HList<V>>(
 ) : CommandCallable {
 
     companion object {
-        private val ERROR_FROM: Text = Text.of(ITALIC, "Error from /")
+        private val ERROR_FROM: Text = Text.of(ITALIC, "Error from")
         private val COLON: Text = Text.of(":")
         private val USAGE: Text = Text.of("Usage: /")
         private val SUB_COMMANDS: Text = Text.of("Subcommands: ")
@@ -36,7 +36,7 @@ class CommandTreeCallable<V : HList<V>>(
             CommandTreeCallable(root, HNil)
     }
 
-    private val rootAlias: Text = Text.of(YELLOW, this.root.aliases.first())
+    private val rootAlias: Text = Text.of("/", YELLOW, this.root.aliases.first())
 
     override fun process(source: CommandSource, arguments: String): CommandResult {
         if (!this.testPermission(source)) {
@@ -82,7 +82,7 @@ class CommandTreeCallable<V : HList<V>>(
         if (e.cause.showUsage) {
             builder.append(
                 NEW_LINE, NEW_LINE, USAGE, this.rootAlias,
-                Text.of(YELLOW, " ", e.usageParts.joinToString(separator = " "), tree.getUsage(source))
+                Text.of(YELLOW, " ", e.usageParts.joinToString(separator = " "), " ", tree.getUsage(source))
             )
 
             if (e.subCommands.isNotEmpty()) {
