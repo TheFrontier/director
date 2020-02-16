@@ -196,15 +196,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         }
 
     override fun getUsage(source: S): String {
-        val builder = StringBuilder()
-
-        if (this.children.isNotEmpty()) {
-            this.children.keys.joinTo(builder, separator = "|", postfix = "|")
-        }
-
-        this.argSequence.joinTo(builder, separator = " ") { it.parameter.getUsage(source) }
-
-        return builder.toString()
+        return this.argSequence.joinToString(separator = " ") { it.parameter.getUsage(source) }
     }
 
     @Suppress("UNCHECKED_CAST")
