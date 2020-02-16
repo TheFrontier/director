@@ -26,7 +26,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         this.accessibility == null || this.accessibility.invoke(source, previous)
 
     override fun execute(source: S, tokens: CommandTokens, previous: V): R {
-        return execute(source, tokens, previous, ArrayList())
+        return execute(source, tokens, previous, ArrayList(), emptyList())
     }
 
     override fun complete(source: S, tokens: CommandTokens, previous: V): List<String> {
@@ -34,7 +34,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     }
 
     @Throws(TreeCommandException::class)
-    protected fun execute(source: S, tokens: CommandTokens, previous: V, usageParts: MutableList<String>): R {
+    protected fun execute(
+        source: S, tokens: CommandTokens, previous: V,
+        usageParts: MutableList<String>, otherSubCommands: List<String>
+    ): R {
         val snapshot: CommandTokens.Snapshot = tokens.snapshot
 
         if (!tokens.hasNext()) {
@@ -46,7 +49,11 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
 
                     if (this.argument.canAccess(source, next)) {
                         usageParts += this.argument.parameter.getUsage(source)
-                        return this.argument.execute(source, tokens, next, usageParts)
+                        if (this.argument.parameter.value is TransparentParameter) {
+                            return this.argument.execute(source, tokens, next, usageParts, otherSubCommands)
+                        } else {
+                            return this.argument.execute(source, tokens, next, usageParts, emptyList())
+                        }
                     }
 
                     // Otherwise ignore access errors here.
@@ -66,8 +73,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                     throw e.wrap(usageParts)
                 }
             } else if (this.argument != null || this.children.isNotEmpty()) {
-                tokens.nextIfPresent()
-                throw tokens.createError("Not enough arguments!").wrap(usageParts)
+                throw tokens.createError("Not enough arguments!").wrap(usageParts, otherSubCommands)
             } else {
                 throw tokens.createError("This command has no executor.").wrap(usageParts)
             }
@@ -82,7 +88,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             }
 
             usageParts += alias
-            return child.execute(source, tokens, previous, usageParts)
+            return child.execute(source, tokens, previous, usageParts, emptyList())
         }
 
         tokens.snapshot = snapshot
@@ -97,7 +103,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                 }
 
                 usageParts += this.argument.parameter.getUsage(source)
-                return this.argument.execute(source, tokens, next, usageParts)
+                return this.argument.execute(source, tokens, next, usageParts, emptyList())
             } catch (e: CommandException) {
                 throw e.wrap(usageParts)
             }
@@ -106,7 +112,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         throw tokens.createError("Too many arguments!").wrap(usageParts)
     }
 
-    protected fun complete(source: S, tokens: CommandTokens, previous: V, usageParts: MutableList<String>): List<String> {
+    protected fun complete(
+        source: S, tokens: CommandTokens, previous: V,
+        usageParts: MutableList<String>
+    ): List<String> {
         val snapshot: CommandTokens.Snapshot = tokens.snapshot
 
         if (!tokens.hasNext()) {
@@ -204,6 +213,15 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             usageParts = usageParts,
             subCommands = this@SimpleCommandTree.childAliases
         )
+
+    private fun CommandException.wrap(usageParts: List<String>, otherSubCommands: List<String>): TreeCommandException =
+        TreeCommandException(
+            cause = this,
+            tree = this@SimpleCommandTree,
+            usageParts = usageParts,
+            subCommands = this@SimpleCommandTree.childAliases + otherSubCommands
+        )
+
 
     private val argSequence: Sequence<SimpleArgumentCommandTree<S, *, *, R>> =
         generateSequence<SimpleArgumentCommandTree<S, *, *, R>>(this.argument) {
