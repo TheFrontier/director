@@ -7,6 +7,7 @@ import pw.dotdash.director.core.HNil
 import pw.dotdash.director.core.Parameter
 import pw.dotdash.director.core.tree.ArgumentCommandTree
 import pw.dotdash.director.core.tree.ChildCommandTree
+import pw.dotdash.director.core.tree.CommandTree
 import pw.dotdash.director.core.tree.RootCommandTree
 
 object SpongeCommandTree {
@@ -46,4 +47,9 @@ object SpongeCommandTree {
     @JvmStatic
     fun <P : HList<P>, V> argument(parameter: Parameter<CommandSource, P, V>): ArgumentCommandTree.Builder<CommandSource, P, V, CommandResult> =
         ArgumentCommandTree.builder(parameter)
+}
+
+fun <B : CommandTree.Builder<S, *, *>, S : CommandSource> B.setPermission(permission: String): B {
+    this.setAccessibility { source, _ -> source.hasPermission(permission) }
+    return this
 }

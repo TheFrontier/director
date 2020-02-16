@@ -26,6 +26,8 @@ interface ChildCommandTree<in S, in P : HList<@UnsafeVariance P>, out R> : Comma
 
         override fun setExecutor(executor: (S, P) -> R): Builder<S, P, R>
 
+        override fun setAccessibility(test: (S, P) -> Boolean): Builder<S, P, R>
+
         fun build(): ChildCommandTree<S, P, R>
     }
 

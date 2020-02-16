@@ -25,6 +25,8 @@ interface ArgumentCommandTree<in S, in P : HList<@UnsafeVariance P>, V, out R> :
 
         override fun setExecutor(executor: (S, HCons<V, P>) -> R): Builder<S, P, V, R>
 
+        override fun setAccessibility(test: (S, HCons<V, P>) -> Boolean): Builder<S, P, V, R>
+
         fun build(): ArgumentCommandTree<S, P, V, R>
     }
 

@@ -1,9 +1,6 @@
 package pw.dotdash.director.sponge
 
-import org.spongepowered.api.command.CommandCallable
-import org.spongepowered.api.command.CommandException
-import org.spongepowered.api.command.CommandResult
-import org.spongepowered.api.command.CommandSource
+import org.spongepowered.api.command.*
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.Text.NEW_LINE
 import org.spongepowered.api.text.format.TextColors.RED
@@ -21,10 +18,9 @@ import pw.dotdash.director.core.tree.RootCommandTree
 import java.util.*
 
 
-class CommandTreeCallable<T : HList<T>> @JvmOverloads constructor(
-    private val root: RootCommandTree<CommandSource, T, CommandResult>,
-    private val initial: T,
-    private val permission: String? = null
+class CommandTreeCallable<V : HList<V>>(
+    private val root: RootCommandTree<CommandSource, V, CommandResult>,
+    private val initial: V
 ) : CommandCallable {
 
     companion object {
@@ -36,14 +32,17 @@ class CommandTreeCallable<T : HList<T>> @JvmOverloads constructor(
 
         @JvmStatic
         @JvmName("of")
-        @JvmOverloads
-        operator fun invoke(root: RootCommandTree<CommandSource, HNil, CommandResult>, permission: String? = null): CommandTreeCallable<HNil> =
-            CommandTreeCallable(root, HNil, permission)
+        operator fun invoke(root: RootCommandTree<CommandSource, HNil, CommandResult>): CommandTreeCallable<HNil> =
+            CommandTreeCallable(root, HNil)
     }
 
     private val rootAlias: Text = Text.of(YELLOW, this.root.aliases.first())
 
     override fun process(source: CommandSource, arguments: String): CommandResult {
+        if (!this.testPermission(source)) {
+            throw CommandPermissionException()
+        }
+
         try {
             val tokens = SimpleCommandTokens(arguments, this.root.tokenizer.tokenize(arguments, false).toMutableList())
             return this.root.execute(source, tokens, this.initial)
@@ -53,6 +52,10 @@ class CommandTreeCallable<T : HList<T>> @JvmOverloads constructor(
     }
 
     override fun getSuggestions(source: CommandSource, arguments: String, targetPosition: Location<World>?): List<String> {
+        if (!this.testPermission(source)) {
+            return emptyList()
+        }
+
         try {
             val tokens = SimpleCommandTokens(arguments, this.root.tokenizer.tokenize(arguments, true).toMutableList())
             return this.root.complete(source, tokens, this.initial)
@@ -88,7 +91,7 @@ class CommandTreeCallable<T : HList<T>> @JvmOverloads constructor(
     }
 
     override fun testPermission(source: CommandSource): Boolean =
-        this.permission == null || source.hasPermission(this.permission)
+        this.root.canAccess(source, this.initial)
 
     override fun getShortDescription(source: CommandSource): Optional<Text> =
         Optional.ofNullable(this.root.description?.let(Text::of))

@@ -44,6 +44,8 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
 
         override fun setExecutor(executor: (S, V) -> R): Builder<S, V, R>
 
+        override fun setAccessibility(test: (S, V) -> Boolean): Builder<S, V, R>
+
         fun build(): RootCommandTree<S, V, R>
     }
 

@@ -11,13 +11,16 @@ import pw.dotdash.director.core.lexer.InputTokenizer
 import pw.dotdash.director.core.lexer.QuotedInputTokenizer
 import pw.dotdash.director.core.tree.*
 import pw.dotdash.director.core.util.StartsWithPredicate
-import java.util.function.Consumer
 
 internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     final override val children: Map<String, SimpleChildCommandTree<S, V, R>>,
     final override val argument: SimpleArgumentCommandTree<S, V, Any?, R>?,
-    final override val executor: ((S, V) -> R)?
+    final override val executor: ((S, V) -> R)?,
+    private val accessibility: ((S, V) -> Boolean)?
 ) : CommandTree<S, V, R> {
+
+    override fun canAccess(source: S, previous: V): Boolean =
+        this.accessibility == null || this.accessibility.invoke(source, previous)
 
     override fun execute(source: S, tokens: CommandTokens, previous: V): R {
         return execute(source, tokens, previous, ArrayList())
@@ -36,11 +39,16 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             if (this.argument != null) {
                 try {
                     val parsed: Any? = this.argument.parameter.value.parse(source, tokens, previous)
-                    usageParts += this.argument.parameter.getUsage(source)
+                    val next: HCons<Any?, V> = HCons(parsed, previous)
 
-                    return this.argument.execute(source, tokens, HCons(parsed, previous), usageParts)
+                    if (this.argument.canAccess(source, next)) {
+                        usageParts += this.argument.parameter.getUsage(source)
+                        return this.argument.execute(source, tokens, next, usageParts)
+                    }
+
+                    // Otherwise ignore access errors here.
                 } catch (ignored: ArgumentParseException) {
-                    // Ignore parsing errors since we don't have any tokens left.
+                    // Ignore parsing errors since we don't have any tokens left anyways.
                     tokens.snapshot = snapshot
                 } catch (e: CommandException) {
                     throw e.wrap(usageParts)
@@ -66,8 +74,11 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         val child: SimpleChildCommandTree<S, V, R>? = this.children[alias]
 
         if (child != null) {
-            usageParts += alias
+            if (!child.canAccess(source, previous)) {
+                throw tokens.createError("You do not have access to this subcommand.").wrap(usageParts)
+            }
 
+            usageParts += alias
             return child.execute(source, tokens, previous, usageParts)
         }
 
@@ -76,15 +87,20 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         if (this.argument != null) {
             try {
                 val parsed: Any? = this.argument.parameter.value.parse(source, tokens, previous)
-                usageParts += this.argument.parameter.getUsage(source)
+                val next: HCons<Any?, V> = HCons(parsed, previous)
 
-                return this.argument.execute(source, tokens, HCons(parsed, previous), usageParts)
+                if (!this.argument.canAccess(source, next)) {
+                    throw tokens.createError("You do not have access to this argument.").wrap(usageParts)
+                }
+
+                usageParts += this.argument.parameter.getUsage(source)
+                return this.argument.execute(source, tokens, next, usageParts)
             } catch (e: CommandException) {
                 throw e.wrap(usageParts)
             }
         }
 
-        throw tokens.createError("Invalid subcommand.").wrap(usageParts)
+        throw tokens.createError("Too many arguments!").wrap(usageParts)
     }
 
     protected fun complete(source: S, tokens: CommandTokens, previous: V, usageParts: MutableList<String>): List<String> {
@@ -94,11 +110,16 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             if (this.argument != null) {
                 try {
                     val parsed: Any? = this.argument.parameter.value.parse(source, tokens, previous)
-                    usageParts += this.argument.parameter.getUsage(source)
+                    val next: HCons<Any?, V> = HCons(parsed, previous)
 
-                    return this.argument.complete(source, tokens, HCons(parsed, previous), usageParts)
+                    if (this.argument.canAccess(source, next)) {
+                        usageParts += this.argument.parameter.getUsage(source)
+                        return this.argument.complete(source, tokens, next, usageParts)
+                    }
+
+                    // Otherwise ignore access errors here.
                 } catch (ignored: ArgumentParseException) {
-                    // Ignore parsing errors since we don't have any tokens left.
+                    // Ignore parsing errors since we don't have any tokens left anyways.
                     tokens.snapshot = snapshot
                 } catch (e: CommandException) {
                     throw e.wrap(usageParts)
@@ -112,11 +133,12 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         val child: SimpleChildCommandTree<S, V, R>? = this.children[alias]
 
         if (tokens.hasNext()) {
-            if (child != null) {
+            if (child != null && child.canAccess(source, previous)) {
                 usageParts += alias
-
                 return child.complete(source, tokens, previous, usageParts)
             }
+
+            // Otherwise ignore access errors since we're completing.
         } else {
             return this.subCompletions(source, tokens, previous, usageParts).filter(StartsWithPredicate(alias))
         }
@@ -127,10 +149,15 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         if (this.argument != null) {
             try {
                 val parsed: Any? = this.argument.parameter.value.parse(source, tokens, previous)
-                usageParts += this.argument.parameter.getUsage(source)
+                val next: HCons<Any?, V> = HCons(parsed, previous)
 
-                // Argument successfully parsed; complete its subtree.
-                return this.argument.complete(source, tokens, HCons(parsed, previous), usageParts)
+                if (this.argument.canAccess(source, next)) {
+                    // Argument successfully parsed; complete its subtree.
+                    usageParts += this.argument.parameter.getUsage(source)
+                    return this.argument.complete(source, tokens, next, usageParts)
+                }
+
+                // Otherwise ignore access errors since we're completing.
             } catch (e: CommandException) {
                 // Failed to parse argument; rollback.
                 tokens.snapshot = snapshot
@@ -141,9 +168,13 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     }
 
     private fun subCompletions(source: S, tokens: CommandTokens, previous: V, usageParts: MutableList<String>): List<String> {
-        val result = ArrayList<String>()
+        val result = HashSet<String>()
 
-        result += this.children.keys
+        for (child: SimpleChildCommandTree<S, V, R> in this.children.values) {
+            if (child.canAccess(source, previous)) {
+                result += child.aliases
+            }
+        }
 
         if (this.argument != null) {
             try {
@@ -153,7 +184,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             }
         }
 
-        return result
+        return result.toList()
     }
 
     private fun CommandException.wrap(usageParts: List<String>): TreeCommandException =
@@ -182,6 +213,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         protected val children = HashMap<String, SimpleChildCommandTree<S, V, R>>()
         protected var argument: SimpleArgumentCommandTree<S, V, in Any?, R>? = null
         protected var executor: ((S, V) -> R)? = null
+        protected var accessibility: ((S, V) -> Boolean)? = null
 
         override fun addChild(child: ChildCommandTree<S, V, R>): B {
             require(child is SimpleChildCommandTree) { "Child trees must be made with ChildCommandTree.builder()" }
@@ -213,6 +245,11 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             this.executor = executor
             return this as B
         }
+
+        override fun setAccessibility(test: (S, V) -> Boolean): B {
+            this.accessibility = test
+            return this as B
+        }
     }
 }
 
@@ -224,8 +261,9 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
     override val extendedDescription: String?,
     children: Map<String, SimpleChildCommandTree<S, V, R>>,
     argument: SimpleArgumentCommandTree<S, V, in Any?, R>?,
-    executor: ((S, V) -> R)?
-) : SimpleCommandTree<S, V, R>(children, argument, executor), RootCommandTree<S, V, R> {
+    executor: ((S, V) -> R)?,
+    accessibility: ((S, V) -> Boolean)?
+) : SimpleCommandTree<S, V, R>(children, argument, executor, accessibility), RootCommandTree<S, V, R> {
 
     class Builder<S, V : HList<V>, R> :
         SimpleCommandTree.Builder<Builder<S, V, R>, S, V, R>(),
@@ -275,7 +313,8 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
             extendedDescription = this.extendedDescription,
             children = this.children,
             argument = this.argument,
-            executor = this.executor
+            executor = this.executor,
+            accessibility = this.accessibility
         )
     }
 }
@@ -284,8 +323,9 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
     override val aliases: List<String>,
     children: Map<String, SimpleChildCommandTree<S, P, R>>,
     argument: SimpleArgumentCommandTree<S, P, in Any?, R>?,
-    executor: ((S, P) -> R)?
-) : SimpleCommandTree<S, P, R>(children, argument, executor), ChildCommandTree<S, P, R> {
+    executor: ((S, P) -> R)?,
+    accessibility: ((S, P) -> Boolean)?
+) : SimpleCommandTree<S, P, R>(children, argument, executor, accessibility), ChildCommandTree<S, P, R> {
 
     class Builder<S, P : HList<P>, R> :
         SimpleCommandTree.Builder<Builder<S, P, R>, S, P, R>(),
@@ -307,7 +347,8 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
             aliases = checkNotNull(this.aliases),
             children = this.children,
             argument = this.argument,
-            executor = this.executor
+            executor = this.executor,
+            accessibility = this.accessibility
         )
     }
 }
@@ -316,8 +357,9 @@ internal class SimpleArgumentCommandTree<S, P : HList<P>, V, R>(
     override val parameter: Parameter<S, P, V>,
     children: Map<String, SimpleChildCommandTree<S, HCons<V, P>, R>>,
     argument: SimpleArgumentCommandTree<S, HCons<V, P>, in Any?, R>?,
-    executor: ((S, HCons<V, P>) -> R)?
-) : SimpleCommandTree<S, HCons<V, P>, R>(children, argument, executor), ArgumentCommandTree<S, P, V, R> {
+    executor: ((S, HCons<V, P>) -> R)?,
+    accessibility: ((S, HCons<V, P>) -> Boolean)?
+) : SimpleCommandTree<S, HCons<V, P>, R>(children, argument, executor, accessibility), ArgumentCommandTree<S, P, V, R> {
 
     class Builder<S, P : HList<P>, V, R> :
         SimpleCommandTree.Builder<Builder<S, P, V, R>, S, HCons<V, P>, R>(),
@@ -334,7 +376,8 @@ internal class SimpleArgumentCommandTree<S, P : HList<P>, V, R>(
             parameter = checkNotNull(this.parameter),
             children = this.children,
             argument = this.argument,
-            executor = this.executor
+            executor = this.executor,
+            accessibility = this.accessibility
         )
     }
 }

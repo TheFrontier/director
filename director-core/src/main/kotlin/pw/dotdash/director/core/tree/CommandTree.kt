@@ -13,6 +13,8 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
 
     fun getUsage(source: S): String
 
+    fun canAccess(source: S, previous: V): Boolean
+
     interface Builder<S, V : HList<V>, R> {
 
         fun addChild(child: ChildCommandTree<S, V, R>): Builder<S, V, R>
@@ -26,5 +28,7 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
         fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): Builder<S, V, R>
 
         fun setExecutor(executor: (S, V) -> R): Builder<S, V, R>
+
+        fun setAccessibility(test: (S, V) -> Boolean): Builder<S, V, R>
     }
 }
