@@ -33,6 +33,9 @@ private data class OptionalParameter<S, P : HList<P>, V : Any>(
         }
     }
 
+    override fun complete(source: S, tokens: CommandTokens, previous: P): List<String> =
+        parameter.complete(source, tokens, previous)
+
     override fun getUsage(source: S, key: String): String =
         "[${this.parameter.getUsage(source, key)}]"
 }
@@ -62,6 +65,9 @@ private data class OptionalOrElseParameter<S, P : HList<P>, V : Any>(
             throw e
         }
     }
+
+    override fun complete(source: S, tokens: CommandTokens, previous: P): List<String> =
+        parameter.complete(source, tokens, previous)
 
     override fun getUsage(source: S, key: String): String =
         "[${this.parameter.getUsage(source, key)}]"
