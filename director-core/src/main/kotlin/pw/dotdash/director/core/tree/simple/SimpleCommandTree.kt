@@ -196,7 +196,14 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         }
 
     override fun getUsage(source: S): String {
-        return this.argSequence.joinToString(separator = " ") { it.parameter.getUsage(source) }
+        val builder = StringBuilder()
+        var count = 0
+        for (element: SimpleArgumentCommandTree<S, *, *, R> in this.argSequence) {
+            val usage: String = element.parameter.getUsage(source)
+            if (++count > 1 && usage.isNotEmpty()) builder.append(' ')
+            builder.append(usage)
+        }
+        return builder.toString()
     }
 
     @Suppress("UNCHECKED_CAST")
