@@ -18,8 +18,6 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
 
     val extendedDescription: String?
 
-    fun getUsage(source: S): String
-
     interface Builder<S, V : HList<V>, R> : CommandTree.Builder<S, V, R> {
 
         fun setAliases(aliases: Iterable<String>): Builder<S, V, R>

@@ -55,6 +55,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                     throw e.wrap(usageParts)
                 }
             } else if (this.argument != null || this.children.isNotEmpty()) {
+                tokens.nextIfPresent()
                 throw tokens.createError("Not enough arguments!").wrap(usageParts)
             } else {
                 throw tokens.createError("This command has no executor.").wrap(usageParts)
@@ -156,7 +157,24 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     }
 
     private fun CommandException.wrap(usageParts: List<String>): TreeCommandException =
-        TreeCommandException(this, usageParts, this@SimpleCommandTree.children.keys.toList())
+        TreeCommandException(this, this@SimpleCommandTree, usageParts, this@SimpleCommandTree.children.keys.toList())
+
+    private val argSequence: Sequence<SimpleArgumentCommandTree<S, *, *, R>> =
+        generateSequence<SimpleArgumentCommandTree<S, *, *, R>>(this.argument) {
+            it.argument
+        }
+
+    override fun getUsage(source: S): String {
+        val builder = StringBuilder()
+
+        if (this.children.isNotEmpty()) {
+            this.children.keys.joinTo(builder, separator = "|", postfix = "|")
+        }
+
+        this.argSequence.joinTo(builder, separator = " ") { it.parameter.getUsage(source) }
+
+        return builder.toString()
+    }
 
     @Suppress("UNCHECKED_CAST")
     abstract class Builder<B : Builder<B, S, V, R>, S, V : HList<V>, R> : CommandTree.Builder<S, V, R> {
@@ -208,25 +226,6 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
     argument: SimpleArgumentCommandTree<S, V, in Any?, R>?,
     executor: ((S, V) -> R)?
 ) : SimpleCommandTree<S, V, R>(children, argument, executor), RootCommandTree<S, V, R> {
-
-    private val argSequence: List<SimpleArgumentCommandTree<S, *, *, R>> =
-        generateSequence<SimpleArgumentCommandTree<S, *, *, R>>(this.argument) {
-            it.argument
-        }.toList()
-
-    override fun getUsage(source: S): String {
-        val builder = StringBuilder()
-            .append(this.aliases.first())
-            .append(' ')
-
-        if (this.children.isNotEmpty()) {
-            this.children.keys.joinTo(builder, separator = "|", postfix = "|")
-        }
-
-        this.argSequence.joinTo(builder, separator = " ") { it.parameter.getUsage(source) }
-
-        return builder.toString()
-    }
 
     class Builder<S, V : HList<V>, R> :
         SimpleCommandTree.Builder<Builder<S, V, R>, S, V, R>(),

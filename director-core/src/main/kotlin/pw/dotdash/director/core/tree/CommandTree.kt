@@ -11,6 +11,8 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
 
     val executor: ((S, V) -> R)?
 
+    fun getUsage(source: S): String
+
     interface Builder<S, V : HList<V>, R> {
 
         fun addChild(child: ChildCommandTree<S, V, R>): Builder<S, V, R>
