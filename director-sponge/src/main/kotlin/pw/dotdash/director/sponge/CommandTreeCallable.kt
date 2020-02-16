@@ -27,9 +27,9 @@ class CommandTreeCallable<T : HList<T>> @JvmOverloads constructor(
 ) : CommandCallable {
 
     companion object {
-        private val ERROR_FROM: Text = Text.of(ITALIC, "Error from ")
+        private val ERROR_FROM: Text = Text.of(ITALIC, "Error from /")
         private val COLON: Text = Text.of(":")
-        private val USAGE: Text = Text.of("Usage: ")
+        private val USAGE: Text = Text.of("Usage: /")
         private val SUB_COMMANDS: Text = Text.of("Subcommands: ")
         private val COMMA_SEPARATOR: Text = Text.of(", ")
 
@@ -74,7 +74,7 @@ class CommandTreeCallable<T : HList<T>> @JvmOverloads constructor(
             builder.append(NEW_LINE, NEW_LINE, USAGE, this.rootAlias, Text.of(YELLOW, " ", e.usageParts.joinToString(separator = " ")))
 
             if (e.subCommands.isNotEmpty()) {
-                builder.append(SUB_COMMANDS, Text.joinWith(COMMA_SEPARATOR, e.subCommands.map { Text.of(YELLOW, it) }))
+                builder.append(NEW_LINE, SUB_COMMANDS, Text.joinWith(COMMA_SEPARATOR, e.subCommands.map { Text.of(YELLOW, it) }))
             }
         }
 

@@ -10,6 +10,7 @@ import pw.dotdash.director.core.lexer.CommandTokens
 import pw.dotdash.director.core.lexer.InputTokenizer
 import pw.dotdash.director.core.lexer.QuotedInputTokenizer
 import pw.dotdash.director.core.tree.*
+import pw.dotdash.director.core.util.StartsWithPredicate
 import java.util.function.Consumer
 
 internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
@@ -53,8 +54,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                 } catch (e: CommandException) {
                     throw e.wrap(usageParts)
                 }
+            } else if (this.argument != null || this.children.isNotEmpty()) {
+                throw tokens.createError("Not enough arguments!").wrap(usageParts)
             } else {
-                throw CommandException("This command has no executor.", showUsage = true).wrap(usageParts)
+                throw tokens.createError("This command has no executor.").wrap(usageParts)
             }
         }
 
@@ -107,10 +110,14 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         val alias: String = tokens.next()
         val child: SimpleChildCommandTree<S, V, R>? = this.children[alias]
 
-        if (child != null) {
-            usageParts += alias
+        if (tokens.hasNext()) {
+            if (child != null) {
+                usageParts += alias
 
-            return child.complete(source, tokens, previous, usageParts)
+                return child.complete(source, tokens, previous, usageParts)
+            }
+        } else {
+            return this.subCompletions(source, tokens, previous, usageParts).filter(StartsWithPredicate(alias))
         }
 
         tokens.snapshot = snapshot
@@ -252,7 +259,7 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
         }
 
         override fun setDescription(description: String): RootCommandTree.Builder<S, V, R> {
-            this.description =description
+            this.description = description
             return this
         }
 
