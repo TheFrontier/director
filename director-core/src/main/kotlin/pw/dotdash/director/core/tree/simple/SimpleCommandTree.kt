@@ -19,6 +19,8 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     private val accessibility: ((S, V) -> Boolean)?
 ) : CommandTree<S, V, R> {
 
+    private val childAliases: List<String> = this.children.values.map { it.aliases.first() }.distinct()
+
     override fun canAccess(source: S, previous: V): Boolean =
         this.accessibility == null || this.accessibility.invoke(source, previous)
 
@@ -188,7 +190,12 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     }
 
     private fun CommandException.wrap(usageParts: List<String>): TreeCommandException =
-        TreeCommandException(this, this@SimpleCommandTree, usageParts, this@SimpleCommandTree.children.values.map { it.aliases.first() })
+        TreeCommandException(
+            cause = this,
+            tree = this@SimpleCommandTree,
+            usageParts = usageParts,
+            subCommands = this@SimpleCommandTree.childAliases
+        )
 
     private val argSequence: Sequence<SimpleArgumentCommandTree<S, *, *, R>> =
         generateSequence<SimpleArgumentCommandTree<S, *, *, R>>(this.argument) {
