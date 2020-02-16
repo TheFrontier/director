@@ -11,6 +11,7 @@ import pw.dotdash.director.core.lexer.InputTokenizer
 import pw.dotdash.director.core.lexer.QuotedInputTokenizer
 import pw.dotdash.director.core.tree.*
 import pw.dotdash.director.core.util.StartsWithPredicate
+import pw.dotdash.director.core.value.TransparentParameter
 
 internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     final override val children: Map<String, SimpleChildCommandTree<S, V, R>>,
@@ -116,7 +117,14 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
 
                     if (this.argument.canAccess(source, next)) {
                         usageParts += this.argument.parameter.getUsage(source)
-                        return this.argument.complete(source, tokens, next, usageParts)
+                        val completions: List<String> = this.argument.complete(source, tokens, next, usageParts)
+
+                        if (this.argument.parameter.value is TransparentParameter) {
+                            // Also return the current tree's completions since it's transparent.
+                            return completions + this.subCompletions(source, tokens, previous, usageParts)
+                        }
+
+                        return completions
                     }
 
                     // Otherwise ignore access errors here.
