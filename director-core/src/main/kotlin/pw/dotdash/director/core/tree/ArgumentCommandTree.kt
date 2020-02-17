@@ -7,37 +7,22 @@ import pw.dotdash.director.core.tree.simple.SimpleArgumentCommandTree
 
 interface ArgumentCommandTree<in S, in P : HList<@UnsafeVariance P>, V, out R> : CommandTree<S, HCons<V, P>, R> {
 
+    val parent: CommandTree<S, P, R>
+
     val parameter: Parameter<S, P, V>
 
     interface Builder<S, P : HList<P>, V, R> : CommandTree.Builder<S, HCons<V, P>, R> {
 
         fun setParameter(parameter: Parameter<S, P, V>): Builder<S, P, V, R>
 
-        override fun addChild(child: ChildCommandTree<S, HCons<V, P>, R>): Builder<S, P, V, R>
-
         override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, HCons<V, P>, R>.() -> Unit): Builder<S, P, V, R>
 
         override fun addChild(vararg aliases: String, init: ChildCommandTree.Builder<S, HCons<V, P>, R>.() -> Unit): Builder<S, P, V, R>
 
-        override fun setArgument(argument: ArgumentCommandTree<S, HCons<V, P>, *, R>): Builder<S, P, V, R>
+        override fun <NV> argument(parameter: Parameter<S, HCons<V, P>, NV>, init: Builder<S, HCons<V, P>, NV, R>.() -> Unit): Builder<S, P, V, R>
 
-        override fun <NV> setArgument(parameter: Parameter<S, HCons<V, P>, NV>, init: Builder<S, HCons<V, P>, NV, R>.() -> Unit): Builder<S, P, V, R>
+        override fun executor(executor: (S, HCons<V, P>) -> R): Builder<S, P, V, R>
 
-        override fun setExecutor(executor: (S, HCons<V, P>) -> R): Builder<S, P, V, R>
-
-        override fun setAccessibility(test: (S, HCons<V, P>) -> Boolean): Builder<S, P, V, R>
-
-        fun build(): ArgumentCommandTree<S, P, V, R>
-    }
-
-    companion object {
-        @JvmStatic
-        fun <S, P : HList<P>, V, R> builder(): Builder<S, P, V, R> =
-            SimpleArgumentCommandTree.Builder()
-
-        @JvmStatic
-        fun <S, P : HList<P>, V, R> builder(parameter: Parameter<S, P, V>): Builder<S, P, V, R> =
-            SimpleArgumentCommandTree.Builder<S, P, V, R>().setParameter(parameter)
-
+        override fun accessibility(test: (S, HCons<V, P>) -> Boolean): Builder<S, P, V, R>
     }
 }

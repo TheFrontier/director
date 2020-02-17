@@ -20,40 +20,32 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     private val accessibility: ((S, V) -> Boolean)?
 ) : CommandTree<S, V, R> {
 
-    private val childAliases: List<String> = this.children.values.map { it.aliases.first() }.distinct()
+    init {
+        // Setup child-parent relationships for error handling.
+        for (child in this.children.values) {
+            child.parent = this
+        }
+        this.argument?.parent = this
+    }
+
+    override val primaryChildren: List<String> = this.children.values.map { it.aliases.first() }.distinct()
 
     override fun canAccess(source: S, previous: V): Boolean =
         this.accessibility == null || this.accessibility.invoke(source, previous)
 
-    override fun execute(source: S, tokens: CommandTokens, previous: V): R {
-        return execute(source, tokens, previous, ArrayList(), emptyList())
-    }
-
-    override fun complete(source: S, tokens: CommandTokens, previous: V): List<String> {
-        return complete(source, tokens, previous, ArrayList())
-    }
-
     @Throws(TreeCommandException::class)
-    protected fun execute(
-        source: S, tokens: CommandTokens, previous: V,
-        usageParts: MutableList<String>, otherSubCommands: List<String>
-    ): R {
+    override fun execute(source: S, tokens: CommandTokens, previous: V): R {
         val snapshot: CommandTokens.Snapshot = tokens.snapshot
 
         if (!tokens.hasNext()) {
-            // Still attempt to parse the argument.
+            // Still attempt to parse the argument, for optionals and transparents.
             if (this.argument != null) {
                 try {
                     val parsed: Any? = this.argument.parameter.value.parse(source, tokens, previous)
                     val next: HCons<Any?, V> = HCons(parsed, previous)
 
                     if (this.argument.canAccess(source, next)) {
-                        usageParts += this.argument.parameter.getUsage(source)
-                        if (this.argument.parameter.value is TransparentParameter) {
-                            return this.argument.execute(source, tokens, next, usageParts, otherSubCommands)
-                        } else {
-                            return this.argument.execute(source, tokens, next, usageParts, emptyList())
-                        }
+                        return this.argument.execute(source, tokens, next)
                     }
 
                     // Otherwise ignore access errors here.
@@ -61,7 +53,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                     // Ignore parsing errors since we don't have any tokens left anyways.
                     tokens.snapshot = snapshot
                 } catch (e: CommandException) {
-                    throw e.wrap(usageParts)
+                    throw e.wrap()
                 }
             }
 
@@ -70,12 +62,12 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                 try {
                     return this.executor.invoke(source, previous)
                 } catch (e: CommandException) {
-                    throw e.wrap(usageParts)
+                    throw e.wrap()
                 }
             } else if (this.argument != null || this.children.isNotEmpty()) {
-                throw tokens.createError("Not enough arguments!").wrap(usageParts, otherSubCommands)
+                throw tokens.createError("Not enough arguments!").wrap()
             } else {
-                throw tokens.createError("This command has no executor.").wrap(usageParts)
+                throw tokens.createError("This command has no executor.").wrap()
             }
         }
 
@@ -84,11 +76,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
 
         if (child != null) {
             if (!child.canAccess(source, previous)) {
-                throw tokens.createError("You do not have access to this subcommand.").wrap(usageParts)
+                throw tokens.createError("You do not have access to this subcommand.").wrap()
             }
 
-            usageParts += alias
-            return child.execute(source, tokens, previous, usageParts, emptyList())
+            return child.execute(source, tokens, previous)
         }
 
         tokens.snapshot = snapshot
@@ -99,23 +90,20 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                 val next: HCons<Any?, V> = HCons(parsed, previous)
 
                 if (!this.argument.canAccess(source, next)) {
-                    throw tokens.createError("You do not have access to this argument.").wrap(usageParts)
+                    throw tokens.createError("You do not have access to this argument.").wrap()
                 }
 
-                usageParts += this.argument.parameter.getUsage(source)
-                return this.argument.execute(source, tokens, next, usageParts, emptyList())
+                return this.argument.execute(source, tokens, next)
             } catch (e: CommandException) {
-                throw e.wrap(usageParts)
+                throw e.wrap()
             }
         }
 
-        throw tokens.createError("Too many arguments!").wrap(usageParts)
+        throw tokens.createError("Too many arguments!").wrap()
     }
 
-    protected fun complete(
-        source: S, tokens: CommandTokens, previous: V,
-        usageParts: MutableList<String>
-    ): List<String> {
+    @Throws(TreeCommandException::class)
+    override fun complete(source: S, tokens: CommandTokens, previous: V): List<String> {
         val snapshot: CommandTokens.Snapshot = tokens.snapshot
 
         if (!tokens.hasNext()) {
@@ -124,13 +112,13 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                     val parsed: Any? = this.argument.parameter.value.parse(source, tokens, previous)
                     val next: HCons<Any?, V> = HCons(parsed, previous)
 
+                    // Check for access by the source first.
                     if (this.argument.canAccess(source, next)) {
-                        usageParts += this.argument.parameter.getUsage(source)
-                        val completions: List<String> = this.argument.complete(source, tokens, next, usageParts)
+                        val completions: List<String> = this.argument.complete(source, tokens, next)
 
                         if (this.argument.parameter.value is TransparentParameter) {
                             // Also return the current tree's completions since it's transparent.
-                            return completions + this.subCompletions(source, tokens, previous, usageParts)
+                            return completions + this.subCompletions(source, tokens, previous)
                         }
 
                         return completions
@@ -141,25 +129,27 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                     // Ignore parsing errors since we don't have any tokens left anyways.
                     tokens.snapshot = snapshot
                 } catch (e: CommandException) {
-                    throw e.wrap(usageParts)
+                    throw e.wrap()
                 }
             }
 
-            return this.subCompletions(source, tokens, previous, usageParts)
+            return this.subCompletions(source, tokens, previous)
         }
 
         val alias: String = tokens.next()
         val child: SimpleChildCommandTree<S, V, R>? = this.children[alias]
 
         if (tokens.hasNext()) {
+            // Check for access by the source first.
             if (child != null && child.canAccess(source, previous)) {
-                usageParts += alias
-                return child.complete(source, tokens, previous, usageParts)
+                // Child found; complete its subtree.
+                return child.complete(source, tokens, previous)
             }
 
             // Otherwise ignore access errors since we're completing.
         } else {
-            return this.subCompletions(source, tokens, previous, usageParts).filter(StartsWithPredicate(alias))
+            // Extra filtering for nicer tab completion.
+            return this.subCompletions(source, tokens, previous).filter(StartsWithPredicate(alias))
         }
 
         tokens.snapshot = snapshot
@@ -170,10 +160,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
                 val parsed: Any? = this.argument.parameter.value.parse(source, tokens, previous)
                 val next: HCons<Any?, V> = HCons(parsed, previous)
 
+                // Check for access by the source first.
                 if (this.argument.canAccess(source, next)) {
                     // Argument successfully parsed; complete its subtree.
-                    usageParts += this.argument.parameter.getUsage(source)
-                    return this.argument.complete(source, tokens, next, usageParts)
+                    return this.argument.complete(source, tokens, next)
                 }
 
                 // Otherwise ignore access errors since we're completing.
@@ -183,15 +173,16 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             }
         }
 
-        return this.subCompletions(source, tokens, previous, usageParts)
+        return this.subCompletions(source, tokens, previous)
     }
 
-    private fun subCompletions(source: S, tokens: CommandTokens, previous: V, usageParts: MutableList<String>): List<String> {
+    private fun subCompletions(source: S, tokens: CommandTokens, previous: V): List<String> {
         val result = HashSet<String>()
 
         for (child: SimpleChildCommandTree<S, V, R> in this.children.values) {
+            // Add the child's main alias, if the source has access.
             if (child.canAccess(source, previous)) {
-                result += child.aliases
+                result += child.aliases.first()
             }
         }
 
@@ -199,44 +190,45 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             try {
                 result += this.argument.parameter.value.complete(source, tokens, previous)
             } catch (e: CommandException) {
-                throw e.wrap(usageParts)
+                throw e.wrap()
             }
         }
 
         return result.toList()
     }
 
-    private fun CommandException.wrap(usageParts: List<String>): TreeCommandException =
-        TreeCommandException(
-            cause = this,
-            tree = this@SimpleCommandTree,
-            usageParts = usageParts,
-            subCommands = this@SimpleCommandTree.childAliases
-        )
-
-    private fun CommandException.wrap(usageParts: List<String>, otherSubCommands: List<String>): TreeCommandException =
-        TreeCommandException(
-            cause = this,
-            tree = this@SimpleCommandTree,
-            usageParts = usageParts,
-            subCommands = this@SimpleCommandTree.childAliases + otherSubCommands
-        )
-
-
-    private val argSequence: Sequence<SimpleArgumentCommandTree<S, *, *, R>> =
-        generateSequence<SimpleArgumentCommandTree<S, *, *, R>>(this.argument) {
-            it.argument
-        }
+    private fun CommandException.wrap(): TreeCommandException =
+        TreeCommandException(cause = this, tree = this@SimpleCommandTree)
 
     override fun getUsage(source: S): String {
         val builder = StringBuilder()
-        var count = 0
-        for (element: SimpleArgumentCommandTree<S, *, *, R> in this.argSequence) {
-            val usage: String = element.parameter.getUsage(source)
-            if (++count > 1 && usage.isNotEmpty()) builder.append(' ')
-            builder.append(usage)
+        // Go back up the tree, appending the usage from beforehand.
+        appendUsageFromRoot(builder, source, this)
+
+        // Append usage of any successive arguments.
+        var argument: ArgumentCommandTree<S, *, *, *>? = this.argument
+        while (argument != null) {
+            builder.append(' ').append(argument.parameter.getUsage(source))
+            argument = argument.argument
         }
+
         return builder.toString()
+    }
+
+    private fun appendUsageFromRoot(builder: StringBuilder, source: S, tree: CommandTree<S, *, *>) {
+        when (tree) {
+            is RootCommandTree<S, *, *> -> {
+                builder.append(tree.aliases.first())
+            }
+            is ChildCommandTree<S, *, *> -> {
+                appendUsageFromRoot(builder, source, tree.parent)
+                builder.append(' ').append(tree.aliases.first())
+            }
+            is ArgumentCommandTree<S, *, *, *> -> {
+                appendUsageFromRoot(builder, source, tree.parent)
+                builder.append(' ').append(tree.parameter.getUsage(source))
+            }
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -247,9 +239,8 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         protected var executor: ((S, V) -> R)? = null
         protected var accessibility: ((S, V) -> Boolean)? = null
 
-        override fun addChild(child: ChildCommandTree<S, V, R>): B {
-            require(child is SimpleChildCommandTree) { "Child trees must be made with ChildCommandTree.builder()" }
-
+        override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B {
+            val child: SimpleChildCommandTree<S, V, R> = SimpleChildCommandTree.Builder<S, V, R>().setAliases(aliases).apply(init).build()
             for (alias: String in child.aliases) {
                 require(alias !in this.children) { "Child alias $alias is already registered." }
                 this.children[alias] = child
@@ -257,28 +248,21 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             return this as B
         }
 
-        override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B =
-            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(aliases).apply(init).build())
-
         override fun addChild(vararg aliases: String, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B =
-            this.addChild(ChildCommandTree.builder<S, V, R>().setAliases(*aliases).apply(init).build())
+            this.addChild(aliases.toList(), init)
 
-        override fun setArgument(argument: ArgumentCommandTree<S, V, *, R>): B {
-            require(argument is SimpleArgumentCommandTree) { "Argument trees must be made with ArgumentCommandTree.builder()" }
-
-            this.argument = argument as SimpleArgumentCommandTree<S, V, in Any?, R>
+        override fun <NV> argument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): B {
+            this.argument = SimpleArgumentCommandTree.Builder<S, V, NV, R>().setParameter(parameter).apply(init).build()
+                    as SimpleArgumentCommandTree<S, V, in Any?, R>
             return this as B
         }
 
-        override fun <NV> setArgument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): B =
-            this.setArgument(ArgumentCommandTree.builder<S, V, NV, R>().setParameter(parameter).apply(init).build())
-
-        override fun setExecutor(executor: (S, V) -> R): B {
+        override fun executor(executor: (S, V) -> R): B {
             this.executor = executor
             return this as B
         }
 
-        override fun setAccessibility(test: (S, V) -> Boolean): B {
+        override fun accessibility(test: (S, V) -> Boolean): B {
             this.accessibility = test
             return this as B
         }
@@ -327,17 +311,17 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
             return this
         }
 
-        override fun setDescription(description: String): RootCommandTree.Builder<S, V, R> {
+        override fun setDescription(description: String): Builder<S, V, R> {
             this.description = description
             return this
         }
 
-        override fun setExtendedDescription(extendedDescription: String): RootCommandTree.Builder<S, V, R> {
+        override fun setExtendedDescription(extendedDescription: String): Builder<S, V, R> {
             this.extendedDescription = extendedDescription
             return this
         }
 
-        override fun build(): RootCommandTree<S, V, R> = SimpleRootCommandTree(
+        override fun build(): SimpleRootCommandTree<S, V, R> = SimpleRootCommandTree(
             aliases = checkNotNull(this.aliases),
             initial = checkNotNull(this.initial),
             tokenizer = checkNotNull(this.tokenizer),
@@ -359,6 +343,8 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
     accessibility: ((S, P) -> Boolean)?
 ) : SimpleCommandTree<S, P, R>(children, argument, executor, accessibility), ChildCommandTree<S, P, R> {
 
+    override lateinit var parent: CommandTree<S, P, R>
+
     class Builder<S, P : HList<P>, R> :
         SimpleCommandTree.Builder<Builder<S, P, R>, S, P, R>(),
         ChildCommandTree.Builder<S, P, R> {
@@ -375,7 +361,7 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
             return this
         }
 
-        override fun build(): ChildCommandTree<S, P, R> = SimpleChildCommandTree(
+        fun build(): SimpleChildCommandTree<S, P, R> = SimpleChildCommandTree(
             aliases = checkNotNull(this.aliases),
             children = this.children,
             argument = this.argument,
@@ -393,18 +379,20 @@ internal class SimpleArgumentCommandTree<S, P : HList<P>, V, R>(
     accessibility: ((S, HCons<V, P>) -> Boolean)?
 ) : SimpleCommandTree<S, HCons<V, P>, R>(children, argument, executor, accessibility), ArgumentCommandTree<S, P, V, R> {
 
+    override lateinit var parent: CommandTree<S, P, R>
+
     class Builder<S, P : HList<P>, V, R> :
         SimpleCommandTree.Builder<Builder<S, P, V, R>, S, HCons<V, P>, R>(),
         ArgumentCommandTree.Builder<S, P, V, R> {
 
         private var parameter: Parameter<S, P, V>? = null
 
-        override fun setParameter(parameter: Parameter<S, P, V>): ArgumentCommandTree.Builder<S, P, V, R> {
+        override fun setParameter(parameter: Parameter<S, P, V>): Builder<S, P, V, R> {
             this.parameter = parameter
             return this
         }
 
-        override fun build(): ArgumentCommandTree<S, P, V, R> = SimpleArgumentCommandTree(
+        fun build(): SimpleArgumentCommandTree<S, P, V, R> = SimpleArgumentCommandTree(
             parameter = checkNotNull(this.parameter),
             children = this.children,
             argument = this.argument,

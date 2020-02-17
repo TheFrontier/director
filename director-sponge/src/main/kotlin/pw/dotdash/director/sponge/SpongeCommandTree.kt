@@ -27,29 +27,9 @@ object SpongeCommandTree {
     @JvmStatic
     fun root(vararg aliases: String): RootCommandTree.Builder<CommandSource, HNil, CommandResult> =
         RootCommandTree.builder(HNil, *aliases)
-
-    @JvmStatic
-    fun <P : HList<P>> child(): ChildCommandTree.Builder<CommandSource, P, CommandResult> =
-        ChildCommandTree.builder()
-
-    @JvmStatic
-    fun <P : HList<P>> child(aliases: List<String>): ChildCommandTree.Builder<CommandSource, P, CommandResult> =
-        ChildCommandTree.builder(aliases)
-
-    @JvmStatic
-    fun <P : HList<P>> child(vararg aliases: String): ChildCommandTree.Builder<CommandSource, P, CommandResult> =
-        ChildCommandTree.builder(*aliases)
-
-    @JvmStatic
-    fun <P : HList<P>, V> argument(): ArgumentCommandTree.Builder<CommandSource, P, V, CommandResult> =
-        ArgumentCommandTree.builder()
-
-    @JvmStatic
-    fun <P : HList<P>, V> argument(parameter: Parameter<CommandSource, P, V>): ArgumentCommandTree.Builder<CommandSource, P, V, CommandResult> =
-        ArgumentCommandTree.builder(parameter)
 }
 
-fun <B : CommandTree.Builder<S, *, *>, S : CommandSource> B.setPermission(permission: String): B {
-    this.setAccessibility { source, _ -> source.hasPermission(permission) }
+fun <B : CommandTree.Builder<S, *, *>, S : CommandSource> B.permission(permission: String): B {
+    this.accessibility { source, _ -> source.hasPermission(permission) }
     return this
 }
