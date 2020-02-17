@@ -93,17 +93,19 @@ class CommandTreeCallable<V : HList<V>>(
         return builder.build()
     }
 
+    private fun Any.toText(): Text = (this as? TextRepresentable)?.toText() ?: Text.of(this)
+
     override fun testPermission(source: CommandSource): Boolean =
         this.root.canAccess(source, this.initial)
 
     override fun getShortDescription(source: CommandSource): Optional<Text> =
-        Optional.ofNullable(this.root.description?.let(Text::of))
+        Optional.ofNullable(this.root.description?.toText())
 
     override fun getHelp(source: CommandSource): Optional<Text> {
         val builder: Text.Builder = Text.builder()
-        this.root.description?.let { builder.append(Text.of(it), NEW_LINE) }
+        this.root.description?.toText()?.let { builder.append(it, NEW_LINE) }
         builder.append(getUsage(source))
-        this.root.extendedDescription?.let { builder.append(NEW_LINE, Text.of(it)) }
+        this.root.extendedDescription?.toText()?.let { builder.append(NEW_LINE, it) }
         return Optional.of(builder.build())
     }
 
