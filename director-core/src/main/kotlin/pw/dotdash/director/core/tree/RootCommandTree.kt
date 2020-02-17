@@ -14,23 +14,15 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
 
     val tokenizer: InputTokenizer
 
-    val description: String?
-
-    val extendedDescription: String?
-
     interface Builder<S, V : HList<V>, R> : CommandTree.Builder<S, V, R> {
 
-        fun setAliases(aliases: Iterable<String>): Builder<S, V, R>
+        fun aliases(aliases: Iterable<String>): Builder<S, V, R>
 
-        fun setAliases(vararg aliases: String): Builder<S, V, R>
+        fun aliases(vararg aliases: String): Builder<S, V, R>
 
-        fun setInitial(initial: V): Builder<S, V, R>
+        fun initial(initial: V): Builder<S, V, R>
 
-        fun setTokenizer(tokenizer: InputTokenizer): Builder<S, V, R>
-
-        fun setDescription(description: String): Builder<S, V, R>
-
-        fun setExtendedDescription(extendedDescription: String): Builder<S, V, R>
+        fun tokenizer(tokenizer: InputTokenizer): Builder<S, V, R>
 
         override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): Builder<S, V, R>
 
@@ -42,6 +34,10 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
 
         override fun accessibility(test: (S, V) -> Boolean): Builder<S, V, R>
 
+        override fun description(description: Any): Builder<S, V, R>
+
+        override fun extendedDescription(extendedDescription: Any): Builder<S, V, R>
+
         fun build(): RootCommandTree<S, V, R>
     }
 
@@ -52,22 +48,22 @@ interface RootCommandTree<in S, V : HList<V>, out R> : CommandTree<S, V, R> {
 
         @JvmStatic
         fun <S, R> builder(aliases: List<String>): Builder<S, HNil, R> =
-            SimpleRootCommandTree.Builder<S, HNil, R>().setAliases(aliases)
+            SimpleRootCommandTree.Builder<S, HNil, R>().aliases(aliases)
 
         @JvmStatic
         fun <S, R> builder(vararg aliases: String): Builder<S, HNil, R> =
-            SimpleRootCommandTree.Builder<S, HNil, R>().setAliases(*aliases)
+            SimpleRootCommandTree.Builder<S, HNil, R>().aliases(*aliases)
 
         @JvmStatic
         fun <S, V : HList<V>, R> builder(initial: V): Builder<S, V, R> =
-            SimpleRootCommandTree.Builder<S, V, R>().setInitial(initial)
+            SimpleRootCommandTree.Builder<S, V, R>().initial(initial)
 
         @JvmStatic
         fun <S, V : HList<V>, R> builder(initial: V, aliases: List<String>): Builder<S, V, R> =
-            SimpleRootCommandTree.Builder<S, V, R>().setInitial(initial).setAliases(aliases)
+            SimpleRootCommandTree.Builder<S, V, R>().initial(initial).aliases(aliases)
 
         @JvmStatic
         fun <S, V : HList<V>, R> builder(initial: V, vararg aliases: String): Builder<S, V, R> =
-            SimpleRootCommandTree.Builder<S, V, R>().setInitial(initial).setAliases(*aliases)
+            SimpleRootCommandTree.Builder<S, V, R>().initial(initial).aliases(*aliases)
     }
 }

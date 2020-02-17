@@ -13,7 +13,7 @@ interface ArgumentCommandTree<in S, in P : HList<@UnsafeVariance P>, V, out R> :
 
     interface Builder<S, P : HList<P>, V, R> : CommandTree.Builder<S, HCons<V, P>, R> {
 
-        fun setParameter(parameter: Parameter<S, P, V>): Builder<S, P, V, R>
+        fun parameter(parameter: Parameter<S, P, V>): Builder<S, P, V, R>
 
         override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, HCons<V, P>, R>.() -> Unit): Builder<S, P, V, R>
 
@@ -24,5 +24,9 @@ interface ArgumentCommandTree<in S, in P : HList<@UnsafeVariance P>, V, out R> :
         override fun executor(executor: (S, HCons<V, P>) -> R): Builder<S, P, V, R>
 
         override fun accessibility(test: (S, HCons<V, P>) -> Boolean): Builder<S, P, V, R>
+
+        override fun description(description: Any): Builder<S, P, V, R>
+
+        override fun extendedDescription(extendedDescription: Any): Builder<S, P, V, R>
     }
 }

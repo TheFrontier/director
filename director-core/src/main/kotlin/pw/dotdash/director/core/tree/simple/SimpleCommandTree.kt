@@ -17,7 +17,9 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
     final override val children: Map<String, SimpleChildCommandTree<S, V, R>>,
     final override val argument: SimpleArgumentCommandTree<S, V, Any?, R>?,
     final override val executor: ((S, V) -> R)?,
-    private val accessibility: ((S, V) -> Boolean)?
+    private val accessibility: ((S, V) -> Boolean)?,
+    final override val description: Any?,
+    final override val extendedDescription: Any?
 ) : CommandTree<S, V, R> {
 
     init {
@@ -238,9 +240,11 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         protected var argument: SimpleArgumentCommandTree<S, V, in Any?, R>? = null
         protected var executor: ((S, V) -> R)? = null
         protected var accessibility: ((S, V) -> Boolean)? = null
+        protected var description: Any? = null
+        protected var extendedDescription: Any? = null
 
         override fun addChild(aliases: List<String>, init: ChildCommandTree.Builder<S, V, R>.() -> Unit): B {
-            val child: SimpleChildCommandTree<S, V, R> = SimpleChildCommandTree.Builder<S, V, R>().setAliases(aliases).apply(init).build()
+            val child: SimpleChildCommandTree<S, V, R> = SimpleChildCommandTree.Builder<S, V, R>().aliases(aliases).apply(init).build()
             for (alias: String in child.aliases) {
                 require(alias !in this.children) { "Child alias $alias is already registered." }
                 this.children[alias] = child
@@ -252,7 +256,7 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             this.addChild(aliases.toList(), init)
 
         override fun <NV> argument(parameter: Parameter<S, V, NV>, init: ArgumentCommandTree.Builder<S, V, NV, R>.() -> Unit): B {
-            this.argument = SimpleArgumentCommandTree.Builder<S, V, NV, R>().setParameter(parameter).apply(init).build()
+            this.argument = SimpleArgumentCommandTree.Builder<S, V, NV, R>().parameter(parameter).apply(init).build()
                     as SimpleArgumentCommandTree<S, V, in Any?, R>
             return this as B
         }
@@ -266,6 +270,16 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             this.accessibility = test
             return this as B
         }
+
+        override fun description(description: Any): B {
+            this.description = description
+            return this as B
+        }
+
+        override fun extendedDescription(extendedDescription: Any): B {
+            this.extendedDescription = extendedDescription
+            return this as B
+        }
     }
 }
 
@@ -273,13 +287,14 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
     override val aliases: List<String>,
     override val initial: V,
     override val tokenizer: InputTokenizer,
-    override val description: String?,
-    override val extendedDescription: String?,
     children: Map<String, SimpleChildCommandTree<S, V, R>>,
     argument: SimpleArgumentCommandTree<S, V, in Any?, R>?,
     executor: ((S, V) -> R)?,
-    accessibility: ((S, V) -> Boolean)?
-) : SimpleCommandTree<S, V, R>(children, argument, executor, accessibility), RootCommandTree<S, V, R> {
+    accessibility: ((S, V) -> Boolean)?,
+    description: Any?,
+    extendedDescription: Any?
+) : SimpleCommandTree<S, V, R>(children, argument, executor, accessibility, description, extendedDescription),
+    RootCommandTree<S, V, R> {
 
     class Builder<S, V : HList<V>, R> :
         SimpleCommandTree.Builder<Builder<S, V, R>, S, V, R>(),
@@ -288,36 +303,24 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
         private var aliases: List<String>? = null
         private var initial: V? = null
         private var tokenizer: InputTokenizer = QuotedInputTokenizer.DEFAULT
-        private var description: String? = null
-        private var extendedDescription: String? = null
 
-        override fun setAliases(aliases: Iterable<String>): Builder<S, V, R> {
+        override fun aliases(aliases: Iterable<String>): Builder<S, V, R> {
             this.aliases = aliases.toList()
             return this
         }
 
-        override fun setAliases(vararg aliases: String): Builder<S, V, R> {
+        override fun aliases(vararg aliases: String): Builder<S, V, R> {
             this.aliases = aliases.toList()
             return this
         }
 
-        override fun setInitial(initial: V): Builder<S, V, R> {
+        override fun initial(initial: V): Builder<S, V, R> {
             this.initial = initial
             return this
         }
 
-        override fun setTokenizer(tokenizer: InputTokenizer): Builder<S, V, R> {
+        override fun tokenizer(tokenizer: InputTokenizer): Builder<S, V, R> {
             this.tokenizer = tokenizer
-            return this
-        }
-
-        override fun setDescription(description: String): Builder<S, V, R> {
-            this.description = description
-            return this
-        }
-
-        override fun setExtendedDescription(extendedDescription: String): Builder<S, V, R> {
-            this.extendedDescription = extendedDescription
             return this
         }
 
@@ -325,12 +328,12 @@ internal class SimpleRootCommandTree<S, V : HList<V>, R>(
             aliases = checkNotNull(this.aliases),
             initial = checkNotNull(this.initial),
             tokenizer = checkNotNull(this.tokenizer),
-            description = this.description,
-            extendedDescription = this.extendedDescription,
             children = this.children,
             argument = this.argument,
             executor = this.executor,
-            accessibility = this.accessibility
+            accessibility = this.accessibility,
+            description = this.description,
+            extendedDescription = this.extendedDescription
         )
     }
 }
@@ -340,8 +343,11 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
     children: Map<String, SimpleChildCommandTree<S, P, R>>,
     argument: SimpleArgumentCommandTree<S, P, in Any?, R>?,
     executor: ((S, P) -> R)?,
-    accessibility: ((S, P) -> Boolean)?
-) : SimpleCommandTree<S, P, R>(children, argument, executor, accessibility), ChildCommandTree<S, P, R> {
+    accessibility: ((S, P) -> Boolean)?,
+    description: Any?,
+    extendedDescription: Any?
+) : SimpleCommandTree<S, P, R>(children, argument, executor, accessibility, description, extendedDescription),
+    ChildCommandTree<S, P, R> {
 
     override lateinit var parent: CommandTree<S, P, R>
 
@@ -351,12 +357,12 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
 
         private var aliases: List<String>? = null
 
-        override fun setAliases(aliases: Iterable<String>): Builder<S, P, R> {
+        override fun aliases(aliases: Iterable<String>): Builder<S, P, R> {
             this.aliases = aliases.toList()
             return this
         }
 
-        override fun setAliases(vararg aliases: String): Builder<S, P, R> {
+        override fun aliases(vararg aliases: String): Builder<S, P, R> {
             this.aliases = aliases.toList()
             return this
         }
@@ -366,7 +372,9 @@ internal class SimpleChildCommandTree<S, P : HList<P>, R>(
             children = this.children,
             argument = this.argument,
             executor = this.executor,
-            accessibility = this.accessibility
+            accessibility = this.accessibility,
+            description = this.description,
+            extendedDescription = this.description
         )
     }
 }
@@ -376,8 +384,11 @@ internal class SimpleArgumentCommandTree<S, P : HList<P>, V, R>(
     children: Map<String, SimpleChildCommandTree<S, HCons<V, P>, R>>,
     argument: SimpleArgumentCommandTree<S, HCons<V, P>, in Any?, R>?,
     executor: ((S, HCons<V, P>) -> R)?,
-    accessibility: ((S, HCons<V, P>) -> Boolean)?
-) : SimpleCommandTree<S, HCons<V, P>, R>(children, argument, executor, accessibility), ArgumentCommandTree<S, P, V, R> {
+    accessibility: ((S, HCons<V, P>) -> Boolean)?,
+    description: Any?,
+    extendedDescription: Any?
+) : SimpleCommandTree<S, HCons<V, P>, R>(children, argument, executor, accessibility, description, extendedDescription),
+    ArgumentCommandTree<S, P, V, R> {
 
     override lateinit var parent: CommandTree<S, P, R>
 
@@ -387,7 +398,7 @@ internal class SimpleArgumentCommandTree<S, P : HList<P>, V, R>(
 
         private var parameter: Parameter<S, P, V>? = null
 
-        override fun setParameter(parameter: Parameter<S, P, V>): Builder<S, P, V, R> {
+        override fun parameter(parameter: Parameter<S, P, V>): Builder<S, P, V, R> {
             this.parameter = parameter
             return this
         }
@@ -397,7 +408,9 @@ internal class SimpleArgumentCommandTree<S, P : HList<P>, V, R>(
             children = this.children,
             argument = this.argument,
             executor = this.executor,
-            accessibility = this.accessibility
+            accessibility = this.accessibility,
+            description = this.description,
+            extendedDescription = this.extendedDescription
         )
     }
 }

@@ -13,6 +13,10 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
 
     val executor: ((S, V) -> R)?
 
+    val description: Any?
+
+    val extendedDescription: Any?
+
     fun getUsage(source: S): String
 
     fun canAccess(source: S, previous: V): Boolean
@@ -28,5 +32,9 @@ interface CommandTree<in S, in V : HList<@UnsafeVariance V>, out R> : TreeExecut
         fun executor(executor: (S, V) -> R): Builder<S, V, R>
 
         fun accessibility(test: (S, V) -> Boolean): Builder<S, V, R>
+
+        fun description(description: Any): Builder<S, V, R>
+
+        fun extendedDescription(extendedDescription: Any): Builder<S, V, R>
     }
 }

@@ -12,9 +12,9 @@ interface ChildCommandTree<in S, in P : HList<@UnsafeVariance P>, out R> : Comma
 
     interface Builder<S, P : HList<P>, R> : CommandTree.Builder<S, P, R> {
 
-        fun setAliases(aliases: Iterable<String>): Builder<S, P, R>
+        fun aliases(aliases: Iterable<String>): Builder<S, P, R>
 
-        fun setAliases(vararg aliases: String): Builder<S, P, R>
+        fun aliases(vararg aliases: String): Builder<S, P, R>
 
         override fun addChild(aliases: List<String>, init: Builder<S, P, R>.() -> Unit): Builder<S, P, R>
 
@@ -25,5 +25,9 @@ interface ChildCommandTree<in S, in P : HList<@UnsafeVariance P>, out R> : Comma
         override fun executor(executor: (S, P) -> R): Builder<S, P, R>
 
         override fun accessibility(test: (S, P) -> Boolean): Builder<S, P, R>
+
+        override fun description(description: Any): Builder<S, P, R>
+
+        override fun extendedDescription(extendedDescription: Any): Builder<S, P, R>
     }
 }
