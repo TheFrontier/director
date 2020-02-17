@@ -27,7 +27,7 @@ class CommandTreeCallable<V : HList<V>>(
     companion object {
         private val ERROR_FROM: Text = Text.of(ITALIC, "Error from ")
         private val COLON: Text = Text.of(":")
-        private val USAGE: Text = Text.of("Usage: ")
+        private val USAGE: Text = Text.of("Usage: /")
         private val SUB_COMMANDS: Text = Text.of("Subcommands: ")
         private val COMMA_SEPARATOR: Text = Text.of(", ")
 

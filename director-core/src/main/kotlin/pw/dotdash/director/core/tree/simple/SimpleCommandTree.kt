@@ -210,7 +210,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
         // Append usage of any successive arguments.
         var argument: ArgumentCommandTree<S, *, *, *>? = this.argument
         while (argument != null) {
-            builder.append(' ').append(argument.parameter.getUsage(source))
+            val usage: String = argument.parameter.getUsage(source)
+            if (usage.isNotEmpty()) {
+                builder.append(' ').append(argument.parameter.getUsage(source))
+            }
             argument = argument.argument
         }
 
@@ -228,7 +231,10 @@ internal sealed class SimpleCommandTree<S, V : HList<V>, R>(
             }
             is ArgumentCommandTree<S, *, *, *> -> {
                 appendUsageFromRoot(builder, source, tree.parent)
-                builder.append(' ').append(tree.parameter.getUsage(source))
+                val usage: String = tree.parameter.getUsage(source)
+                if (usage.isNotEmpty()) {
+                    builder.append(' ').append(tree.parameter.getUsage(source))
+                }
             }
         }
     }
