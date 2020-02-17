@@ -70,7 +70,7 @@ class CommandTreeCallable<V : HList<V>>(
         val tree: CommandTree<CommandSource, *, *> = e.tree as CommandTree<CommandSource, *, *>
 
         val builder: Text.Builder = Text.builder().color(RED)
-            .append(ERROR_FROM, this.rootAlias, COLON, NEW_LINE, Text.of(cause.message))
+            .append(ERROR_FROM, this.rootAlias, COLON, NEW_LINE, cause.dynMessage.let { it as? Text } ?: Text.of(cause.message))
 
         if (cause is ArgumentParseException) {
             val annotated: String = cause.annotatedPosition
