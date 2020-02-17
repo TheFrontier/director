@@ -83,7 +83,7 @@ class CommandTreeCallable<V : HList<V>>(
         }
 
         if (e.cause.showUsage) {
-            builder.append(NEW_LINE, NEW_LINE, USAGE, this.rootAlias, Text.of(YELLOW, tree.getUsage(source)))
+            builder.append(NEW_LINE, NEW_LINE, USAGE, Text.of(YELLOW, tree.getUsage(source)))
 
             if (tree.primaryChildren.isNotEmpty()) {
                 builder.append(NEW_LINE, SUB_COMMANDS, Text.joinWith(COMMA_SEPARATOR, tree.primaryChildren.map { Text.of(YELLOW, it) }))
