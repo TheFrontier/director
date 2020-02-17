@@ -3,6 +3,7 @@ package pw.dotdash.director.sponge
 import org.spongepowered.api.command.*
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.Text.NEW_LINE
+import org.spongepowered.api.text.TextRepresentable
 import org.spongepowered.api.text.format.TextColors.RED
 import org.spongepowered.api.text.format.TextColors.YELLOW
 import org.spongepowered.api.text.format.TextStyles.ITALIC
@@ -69,8 +70,10 @@ class CommandTreeCallable<V : HList<V>>(
         @Suppress("UNCHECKED_CAST")
         val tree: CommandTree<CommandSource, *, *> = e.tree as CommandTree<CommandSource, *, *>
 
+        val errorMessage: Text = cause.dynMessage.let { (it as? TextRepresentable)?.toText() } ?: Text.of(cause.message)
+
         val builder: Text.Builder = Text.builder().color(RED)
-            .append(ERROR_FROM, this.rootAlias, COLON, NEW_LINE, cause.dynMessage.let { it as? Text } ?: Text.of(cause.message))
+            .append(ERROR_FROM, this.rootAlias, COLON, NEW_LINE, errorMessage)
 
         if (cause is ArgumentParseException) {
             val annotated: String = cause.annotatedPosition
